@@ -1,0 +1,4 @@
+rootProject.name = "acdis"
+
+include ':api'
+include ':cli'
