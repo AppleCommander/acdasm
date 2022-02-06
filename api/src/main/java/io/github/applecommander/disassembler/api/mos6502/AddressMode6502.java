@@ -1,47 +1,50 @@
-package io.github.applecommander.disassembler.api;
+package io.github.applecommander.disassembler.api.mos6502;
 
-import java.util.function.BiFunction;
-
-public enum AddressMode {
+public enum AddressMode6502 {
+    // FIXME the indirect and ZP are mixed a bit (zp) vs (addr) vs (zp,x) vs (addr,x).
     ACC( 1, "%s"),
-    ABS( 3, "%s $%04X"),
-    ABSX(3, "%s $%04X,X"),
-    ABSY(3, "%s $%04X,Y"),
-    IMM( 2, "%s #$%02X"),
+    ABS( 3, "%s $%s"),
+    ABSX(3, "%s $%s,X"),
+    ABSY(3, "%s $%s,Y"),
+    IMM( 2, "%s #$%s"),
     IMP( 1, "%s"),
-    IND( 2, "%s ($%04X)"),
-    INDX(2, "%s ($%02X,X)"),
-    INDY(2, "%s ($%02X),Y"),
-    REL( 2, "%s $02X"),
-    ZP(  2, "%s $%02X"),
-    ZPX( 2, "%s $%02X,X"),
-    ZPY( 2, "%s $%02X,Y");
+    IND( 2, "%s ($%s)"),
+    INDX(2, "%s ($%s,X)"),
+    INDY(2, "%s ($%s),Y"),
+    REL( 2, "%s $%s"),
+    ZP(  2, "%s $%s"),
+    ZPX( 2, "%s $%s,X"),
+    ZPY( 2, "%s $%s,Y");
     
-    private int length;
-    private String format;
-    private BiFunction<String,Integer,String> formatFn;
+    private int instructionLength;
+    private String instructionFormat;
     
-    private AddressMode(int length, String format) {
-        this.length = length;
-        this.format = format;
-        this.formatFn = (length == 0) ? this::format0 : this::format1;
+    private AddressMode6502(int instructionLength, String instructionFormat) {
+        this.instructionLength = instructionLength;
+        this.instructionFormat = instructionFormat;
     }
     
-    public int getLength() {
-        return length;
+    public int getInstructionLength() {
+        return instructionLength;
     }
-    public String format(String mnemonic, int arg) {
-        return formatFn.apply(mnemonic, arg);
+    public String getInstructionFormat() {
+        return instructionFormat;
+    }
+    public boolean isOperandAbsoluteAddress() {
+        return in(ABS, ABSX, ABSY);
+    }
+    public boolean isOperandRelativeAddress() {
+        return in(REL);
     }
     
-    private String format0(String mnemonic, int arg) {
-        return String.format(format, mnemonic);
-    }
-    private String format1(String mnemonic, int arg) {
-        return String.format(format, mnemonic, arg);
+    private boolean in(final AddressMode6502... addressModes) {
+        for (AddressMode6502 am : addressModes) {
+            if (this == am) return true;
+        }
+        return false;
     }
     
-    public static AddressMode[] MOS6502 = {
+    public static AddressMode6502[] MOS6502 = {
         // See: https://www.masswerk.at/6502/6502_instruction_set.html (and show illegal opcodes)
         /*         -0    -1   -2   -3   -4   -5   -6   -7   -8    -9   -A    -B    -C    -D    -E    -F */
         /* 0- */  IMP, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  ABS,  ABS,  ABS,  ABS,
@@ -62,7 +65,7 @@ public enum AddressMode {
         /* F- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
     };
 
-    public static AddressMode[] WDC65C02 = {
+    public static AddressMode6502[] WDC65C02 = {
         // See: http://6502.org/tutorials/65c02opcodes.html
         /*         -0    -1   -2   -3   -4   -5   -6   -7   -8    -9   -A    -B    -C    -D    -E    -F */
         /* 0- */  IMP, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  ABS,  ABS,  ABS,  ABS,

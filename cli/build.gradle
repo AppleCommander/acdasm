@@ -21,9 +21,9 @@ application {
 }
 
 bootJar {
-  archiveName = "acdis.jar"
+  archiveBaseName = 'acdasm'
   manifest {
       attributes 'Implementation-Title': "AppleCommander 'acdis'",
-                  'Implementation-Version': 'BETA'
+                 'Implementation-Version': version
   }
 }
