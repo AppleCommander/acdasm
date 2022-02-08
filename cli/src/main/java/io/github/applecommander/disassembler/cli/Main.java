@@ -8,6 +8,7 @@ import io.github.applecommander.disassembler.api.Instruction;
 import io.github.applecommander.disassembler.api.InstructionSet;
 import io.github.applecommander.disassembler.api.Program;
 import io.github.applecommander.disassembler.api.mos6502.InstructionSet6502;
+import io.github.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -80,6 +81,10 @@ public class Main implements Callable<Integer> {
         @Option(names = { "--6502X" }, description = "MOS 6502 + 'illegal' instructions.")
         public void select6502X(boolean flag) {
             this.instructionSet = InstructionSet6502.for6502withIllegalInstructions();
+        }
+        @Option(names = { "--SWEET16" }, description = "SWEET16.")
+        public void selectSWEET16(boolean flag) {
+            this.instructionSet = InstructionSetSWEET16.forSWEET16();
         }
     }
 }

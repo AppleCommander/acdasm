@@ -20,24 +20,16 @@ public enum OpcodeSWEET16 {
         return mnemonic;
     }
     
-    public static OpcodeSWEET16[] SWEET16 = {
-        // See: https://en.wikipedia.org/wiki/SWEET16
-        /*         -0    -1    -2    -3    -4    -5    -6    -7    -8    -9    -A    -B    -C    -D    -E    -F */
-        /* 0- */  RTN,  BR,   BNC,  BC,   BP,   BM,   BZ,   BNZ,  BM1,  BNM1, BK,   RS,   BS,   ZZZ,  ZZZ,  ZZZ,
-        /* 1- */  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET,  SET, 
-        /* 2- */  LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   
-        /* 3- */  ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,  
-        /* 4- */  LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,   LD,
-        /* 5- */  ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,   ST,
-        /* 6- */  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  LDD,  
-        /* 7- */  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  STD,  
-        /* 8- */  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  POP,  
-        /* 9- */  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  STP,  
-        /* A- */  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  ADD,  
-        /* B- */  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,  SUB,   
-        /* C- */  POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, POPD, 
-        /* D- */  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  CPR,  
-        /* E- */  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  INR,  
-        /* F- */  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  DCR,  
+    public static final OpcodeSWEET16[] REGISTER_OPS = {
+        //  0x  1x   2x   3x   4x    5x   6x   7x
+        null,   SET, LD,  ST,  LD,   ST,  LDD, STD,
+        //  8x  9x   Ax   Bx   Cx    Dx   Ex   Fx
+        POP,    STP, ADD, SUB, POPD, CPR, INR, DCR 
+    };
+    public static final OpcodeSWEET16[] NON_REGISTER_OPS = {
+        //0x 1x    2x   3x  4x  5x   6x   7x
+        RTN, BR,   BNC, BC, BP, BM,  BZ,  BNZ,
+        //8x 9x    Ax   Bx  Cx  Dx   Ex   Fx
+        BM1, BNM1, BK,  RS, BS, ZZZ, ZZZ, ZZZ
     };
 }
