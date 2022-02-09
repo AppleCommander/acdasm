@@ -40,7 +40,7 @@ public enum AddressModeSWEET16 {
     
     public static AddressModeSWEET16[] REGISTER_OPS = {
         //0x  1x   2x   3x   4x   5x   6x   7x
-        null, CON, ABS, DIR, IND, IND, IND, IND, 
+        null, CON, DIR, DIR, IND, IND, IND, IND, 
         //8x  9x   Ax   Bx   Cx   Dx   Ex   Fx
         IND,  IND, DIR, DIR, IND, DIR, DIR, DIR
     };
