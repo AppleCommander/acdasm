@@ -9,6 +9,7 @@ import io.github.applecommander.disassembler.api.InstructionSet;
 import io.github.applecommander.disassembler.api.Program;
 import io.github.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import io.github.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
+import io.github.applecommander.disassembler.api.switching6502.InstructionSet6502Switching;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -85,6 +86,10 @@ public class Main implements Callable<Integer> {
         @Option(names = { "--SWEET16" }, description = "SWEET16.")
         public void selectSWEET16(boolean flag) {
             this.instructionSet = InstructionSetSWEET16.forSWEET16();
+        }
+        @Option(names = { "--6502S" }, description = "MOS 6502 with SWEET16 switching.")
+        public void select6502Switching(boolean flag) {
+            this.instructionSet = InstructionSet6502Switching.withSwitching();
         }
     }
 }
