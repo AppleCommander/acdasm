@@ -1,6 +1,7 @@
 package io.github.applecommander.disassembler.api.switching6502;
 
 import java.util.LinkedList;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Function;
 
@@ -78,6 +79,15 @@ public class InstructionSet6502Switching implements InstructionSet {
         public byte[] getBytes() {
             return new byte[0];
         }
+        
+        @Override
+        public Optional<String> getAddressLabel() {
+            return Optional.empty();
+        }
+        
+        @Override
+        public void setAddressLabel(String label) {
+        }
 
         @Override
         public String getOpcodeMnemonic() {
@@ -93,6 +103,10 @@ public class InstructionSet6502Switching implements InstructionSet {
         public int getOperandValue() {
             return 0;
         }
+        
+        @Override
+        public void setOperandLabel(String label) {
+        }
 
         @Override
         public String formatOperandWithValue() {
@@ -100,7 +114,7 @@ public class InstructionSet6502Switching implements InstructionSet {
         }
 
         @Override
-        public String formatOperandWithLabel(String label) {
+        public String formatOperandWithLabel() {
             return formatOperandWithValue();
         }
     }

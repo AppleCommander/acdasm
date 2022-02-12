@@ -1,7 +1,9 @@
 package io.github.applecommander.disassembler.api;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.github.applecommander.disassembler.api.mos6502.InstructionSet6502;
 
@@ -9,6 +11,7 @@ public class Disassembler {
     private int startAddress;
     private byte[] code;
     private InstructionSet instructionSet;
+    private Map<Integer,String> labels = new HashMap<>();
 
     public static Builder with(byte[] code) {
         return new Builder(code);
@@ -21,6 +24,21 @@ public class Disassembler {
         while (program.hasMore()) {
             Instruction instruction = instructionSet.decode(program);
             instructions.add(instruction);
+            
+            boolean between = (instruction.getOperandValue() >= startAddress)
+                           && (instruction.getOperandValue() < startAddress + code.length);
+            if (between && instruction.operandHasAddress()) {
+                labels.computeIfAbsent(instruction.getOperandValue(), addr -> String.format("L%04X", addr));
+            }
+        }
+
+        for (Instruction instruction : instructions) {
+            if (labels.containsKey(instruction.getAddress())) {
+                instruction.setAddressLabel(labels.get(instruction.getAddress()));
+            }
+            if (instruction.operandHasAddress() && labels.containsKey(instruction.getOperandValue())) {
+                instruction.setOperandLabel(labels.get(instruction.getOperandValue()));
+            }
         }
         
         return instructions;
@@ -40,6 +58,10 @@ public class Disassembler {
         
         public Builder startingAddress(int address) {
             disassembler.startAddress = address;
+            return this;
+        }
+        public Builder use(InstructionSet instructionSet) {
+            disassembler.instructionSet = instructionSet;
             return this;
         }
         public Builder use6502() {

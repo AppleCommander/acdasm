@@ -1,11 +1,11 @@
 package io.github.applecommander.disassembler.api.sweet16;
 
 public enum AddressModeSWEET16 {
-    CON(3, "%s R%X,#$%s"), // Constant (16-bit value)
-    ABS(3, "%s R%X,$%s"),  // Absolute address
+    CON(3, "%s R%X,#%s"), // Constant (16-bit value)
+    ABS(3, "%s R%X,%s"),  // Absolute address
     DIR(1, "%s R%X"),      // Direct (Rn)
     IND(1, "%s @R%X"),     // Indirect (@Rn)
-    BRA(2, "%s $%s"),      // Branch (2 + -128..+127)
+    BRA(2, "%s %s"),      // Branch (2 + -128..+127)
     IMP(1, "%s");          // -
 
     private int instructionLength;

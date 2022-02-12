@@ -2,11 +2,13 @@ package io.github.applecommander.disassembler.cli;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
+import io.github.applecommander.disassembler.api.Disassembler;
 import io.github.applecommander.disassembler.api.Instruction;
 import io.github.applecommander.disassembler.api.InstructionSet;
-import io.github.applecommander.disassembler.api.Program;
 import io.github.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import io.github.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import io.github.applecommander.disassembler.api.switching6502.InstructionSet6502Switching;
@@ -21,10 +23,17 @@ import picocli.CommandLine.Parameters;
          optionListHeading = "%nOptions:%n",
          description = "AC Disassembler.")
 public class Main implements Callable<Integer> {
-    @Option(names = { "-a", "--addr", "--origin" }, defaultValue = "$300", converter = IntegerTypeConverter.class)
+    @Option(names = { "-a", "--addr", "--origin" }, defaultValue = "$300", converter = IntegerTypeConverter.class,
+            description = "Set start address for application.")
     private int startAddress;
+    
+    @Option(names = { "--labels" }, negatable = true, description = "Show/Hide labels.")
+    public void selectLabelEmitter(boolean flag) {
+        emitter = flag ? this::emitWithLabels : this::emitRaw;
+    }
+    private Consumer<Instruction> emitter = this::emitWithLabels;
 
-    @ArgGroup(heading = "%nCPU%n")
+    @ArgGroup(heading = "%nCPU Selection:%n")
     private CpuSelection cpuSelection = new CpuSelection();
     
     @Parameters(arity = "1", description = "File to disassemble.")
@@ -38,18 +47,18 @@ public class Main implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         final byte[] code = Files.readAllBytes(file);
-        Program program = new Program(code, startAddress);
-        InstructionSet instructionSet = cpuSelection.get();
+        
+        List<Instruction> instructions = Disassembler.with(code)
+                .startingAddress(startAddress)
+                .use(cpuSelection.get())
+                .decode();
 
-        while (program.hasMore()) {
-            Instruction instruction = instructionSet.decode(program);
-            emit(instruction);
-        }
+        instructions.forEach(emitter::accept);
         
         return 0;
     }
     
-    public static void emit(Instruction instruction) {
+    public void emitWithLabels(Instruction instruction) {
         System.out.printf("%04X- ", instruction.getAddress());
         
         byte[] code = instruction.getBytes();
@@ -60,8 +69,21 @@ public class Main implements Callable<Integer> {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" ");
-        System.out.printf("%s\n", instruction.formatOperandWithValue());
+        System.out.printf(" %-10.10s ", instruction.getAddressLabel().orElse(""));
+        System.out.printf("%s\n", instruction.formatOperandWithLabel());
+    }
+    public void emitRaw(Instruction instruction) {
+        System.out.printf("%04X- ", instruction.getAddress());
+        
+        byte[] code = instruction.getBytes();
+        for (int i=0; i<3; i++) {
+            if (i >= code.length) {
+                System.out.printf("   ");
+            } else {
+                System.out.printf("%02X ", code[i]);
+            }
+        }
+        System.out.printf(" %s\n", instruction.formatOperandWithValue());
     }
     
     private static class CpuSelection {

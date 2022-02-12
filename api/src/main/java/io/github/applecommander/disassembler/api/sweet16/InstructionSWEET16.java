@@ -1,5 +1,7 @@
 package io.github.applecommander.disassembler.api.sweet16;
 
+import java.util.Optional;
+
 import io.github.applecommander.disassembler.api.Instruction;
 
 public class InstructionSWEET16 implements Instruction {
@@ -8,6 +10,8 @@ public class InstructionSWEET16 implements Instruction {
     private int address;
     private int register;
     private byte[] code;
+    private String addressLabel;
+    private String operandLabel;
     
     InstructionSWEET16(AddressModeSWEET16 addressMode, OpcodeSWEET16 opcode, int register, int address, byte[] code) {
         this.addressMode = addressMode;
@@ -30,6 +34,16 @@ public class InstructionSWEET16 implements Instruction {
     @Override
     public byte[] getBytes() {
         return code;
+    }
+    
+    @Override
+    public Optional<String> getAddressLabel() {
+        return Optional.ofNullable(addressLabel);
+    }
+    
+    @Override
+    public void setAddressLabel(String label) {
+        this.addressLabel = label;
     }
 
     @Override
@@ -58,21 +72,33 @@ public class InstructionSWEET16 implements Instruction {
             return 0;
         }
     }
+    
+    @Override
+    public void setOperandLabel(String label) {
+        this.addressLabel = label;
+    }
 
     @Override
     public String formatOperandWithValue() {
         String label = "-";
         if (addressMode.isOperandAbsoluteAddress() || addressMode.isOperandRelativeAddress()|| getLength() == 3) {
-            label = String.format("%04X", getOperandValue());
+            label = String.format("$%04X", getOperandValue());
         }
         else if (getLength() == 2) {
-            label = String.format("%02X",getOperandValue());
+            label = String.format("$%02X",getOperandValue());
         }
-        return formatOperandWithLabel(label);
+        return internalFormat(label);
+    }
+    
+    @Override
+    public String formatOperandWithLabel() {
+        if (operandLabel == null) {
+            return formatOperandWithValue();
+        }
+        return internalFormat(operandLabel);
     }
 
-    @Override
-    public String formatOperandWithLabel(String label) {
+    String internalFormat(String label) {
         if (addressMode.doesOperandRequireRegister()) {
             if (getLength() == 1) {
                 return String.format(addressMode.getInstructionFormat(), getOpcodeMnemonic(), register);

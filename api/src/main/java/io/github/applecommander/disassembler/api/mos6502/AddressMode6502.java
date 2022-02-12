@@ -3,18 +3,18 @@ package io.github.applecommander.disassembler.api.mos6502;
 public enum AddressMode6502 {
     // FIXME the indirect and ZP are mixed a bit (zp) vs (addr) vs (zp,x) vs (addr,x).
     ACC( 1, "%s"),
-    ABS( 3, "%s $%s"),
-    ABSX(3, "%s $%s,X"),
-    ABSY(3, "%s $%s,Y"),
-    IMM( 2, "%s #$%s"),
+    ABS( 3, "%s %s"),
+    ABSX(3, "%s %s,X"),
+    ABSY(3, "%s %s,Y"),
+    IMM( 2, "%s #%s"),
     IMP( 1, "%s"),
-    IND( 2, "%s ($%s)"),
-    INDX(2, "%s ($%s,X)"),
-    INDY(2, "%s ($%s),Y"),
-    REL( 2, "%s $%s"),
-    ZP(  2, "%s $%s"),
-    ZPX( 2, "%s $%s,X"),
-    ZPY( 2, "%s $%s,Y");
+    IND( 2, "%s (%s)"),
+    INDX(2, "%s (%s,X)"),
+    INDY(2, "%s (%s),Y"),
+    REL( 2, "%s %s"),
+    ZP(  2, "%s %s"),
+    ZPX( 2, "%s %s,X"),
+    ZPY( 2, "%s %s,Y");
     
     private int instructionLength;
     private String instructionFormat;
