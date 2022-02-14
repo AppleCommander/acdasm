@@ -27,11 +27,15 @@ public class Main implements Callable<Integer> {
             description = "Set start address for application.")
     private int startAddress;
     
-    @Option(names = { "--labels" }, negatable = true, description = "Show/Hide labels.")
+    @Option(names = { "--hide-labels" }, negatable = true, description = "Hide labels.")
     public void selectLabelEmitter(boolean flag) {
         emitter = flag ? this::emitWithLabels : this::emitRaw;
     }
     private Consumer<Instruction> emitter = this::emitWithLabels;
+    
+    @Option(names = { "--labels" }, split = ",", defaultValue = "All", description = 
+            "Select which library labels to load (default = 'All'; options are 'F800', 'Applesoft', 'ProDOS', 'DOS33', 'None').")
+    private List<String> labels;
 
     @ArgGroup(heading = "%nCPU Selection:%n")
     private CpuSelection cpuSelection = new CpuSelection();
@@ -48,9 +52,18 @@ public class Main implements Callable<Integer> {
     public Integer call() throws Exception {
         final byte[] code = Files.readAllBytes(file);
         
+        if (labels.contains("All")) {
+            labels.clear();
+            labels.addAll(Disassembler.sections());
+        }
+        else if (labels.contains("None")) {
+            labels.clear();
+        }
+        
         List<Instruction> instructions = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .use(cpuSelection.get())
+                .section(labels)
                 .decode();
 
         instructions.forEach(emitter::accept);

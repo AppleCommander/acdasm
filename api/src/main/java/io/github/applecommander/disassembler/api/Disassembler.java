@@ -1,13 +1,31 @@
 package io.github.applecommander.disassembler.api;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import org.ini4j.Ini;
+import org.ini4j.Profile.Section;
 
 import io.github.applecommander.disassembler.api.mos6502.InstructionSet6502;
 
 public class Disassembler {
+    private static Ini ini = new Ini();
+    static {
+        try (InputStream is = Disassembler.class.getResourceAsStream("/addresses.ini")) {
+            ini.load(is);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private int startAddress;
     private byte[] code;
     private InstructionSet instructionSet;
@@ -45,6 +63,7 @@ public class Disassembler {
     }
     
     public static class Builder {
+        private Set<String> sections = new HashSet<>();
         private Disassembler disassembler = new Disassembler();
         
         public Builder(byte[] code) {
@@ -53,6 +72,20 @@ public class Disassembler {
             disassembler.instructionSet = InstructionSet6502.for6502();
         }
         public List<Instruction> decode() {
+            // merge in all selected sections
+            for (String name : sections) {
+                Section section = ini.get(name);
+                if (section == null) {
+                    throw new RuntimeException(String.format("Section '%s' not defined.", name));
+                }
+                for (Map.Entry<String,String> entry : section.entrySet()) {
+                    Optional<Integer> address = convert(entry.getValue());
+                    if (address.isPresent()) {
+                        disassembler.labels.putIfAbsent(address.get(), entry.getKey());
+                    }
+                }
+            }
+            
             return disassembler.decode();
         }
         
@@ -76,5 +109,29 @@ public class Disassembler {
             disassembler.instructionSet = InstructionSet6502.for65C02();
             return this;
         }
+        
+        public Builder section(List<String> names) {
+            if (names != null) {
+                names.forEach(this.sections::add);
+            }
+            return this;
+        }
+    }
+
+    /** Add support for "$801" and "0x801" instead of just decimal like 2049. */
+    public static Optional<Integer> convert(String value) {
+        if (value == null) {
+            return Optional.empty();
+        } else if (value.startsWith("$")) {
+            return Optional.of(Integer.valueOf(value.substring(1), 16));
+        } else if (value.startsWith("0x") || value.startsWith("0X")) {
+            return Optional.of(Integer.valueOf(value.substring(2), 16));
+        } else {
+            return Optional.of(Integer.valueOf(value));
+        }
+    }
+    
+    public static Set<String> sections() {
+        return ini.keySet();
     }
 }
