@@ -1,9 +1,14 @@
 plugins {
     id 'java-library'
+    id 'maven-publish'
+    id 'signing'
 }
 
-sourceCompatibility = 11
-targetCompatibility = 11
+ext.isSnapshotVersion = version.endsWith("SNAPSHOT")
+ext.isReleaseVersion = !ext.isSnapshotVersion
+
+sourceCompatibility = 8
+targetCompatibility = 8
 
 repositories {
     mavenCentral()
@@ -11,4 +16,67 @@ repositories {
 
 dependencies {
     implementation 'org.ini4j:ini4j:0.5.4'
+}
+
+javadoc {
+    title = "adasm ${version}"
+    source = sourceSets.main.allJava
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+signing {
+    // Only sign if we're uploading...
+    required {
+        isReleaseVersion && gradle.taskGraph.hasTask("publish")
+    }
+    sign configurations.archives
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                groupId = "net.sf.applecommander"
+                artifactId = "acdasm"
+                name = 'AppleCommander Disassembler (acdasm)'
+                description = 'A reusable Java-based API for disassembling Apple-related source code.'
+                url = 'https://applecommander.github.io/'
+                licenses {
+                    license {
+                        name = 'The GNU General Public License (GPL) Version 3, 29 June 2007'
+                        url = 'https://www.gnu.org/licenses/gpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'robgreene'
+                        name = 'Rob Greene'
+                        email = 'robgreene@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/AppleCommander/acdasm.git'
+                    developerConnection = 'scm:git:git@github.com:AppleCommander/acdasm.git'
+                    url = 'https://github.com/AppleCommander/acdasm'
+                }
+            }
+            repositories {
+                maven {
+                    def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                    def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+                    url = isSnapshotVersion ? snapshotsRepoUrl : releasesRepoUrl
+                    credentials {
+                        username = findProperty('ossrhUsername')
+                        password = findProperty('ossrhPassword')
+                    }
+                }
+            }
+        }
+    }
 }
