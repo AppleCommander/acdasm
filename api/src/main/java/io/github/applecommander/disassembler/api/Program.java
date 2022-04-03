@@ -25,6 +25,9 @@ public class Program {
         offset += n;
         return x;
     }
+    public int currentOffset() {
+        return offset;
+    }
     public int currentAddress() {
         return baseAddress+offset;
     }

@@ -27,6 +27,7 @@ public class Disassembler {
     }
 
     private int startAddress;
+    private int bytesToSkip;
     private byte[] code;
     private InstructionSet instructionSet;
     private Map<Integer,String> labels = new HashMap<>();
@@ -40,7 +41,13 @@ public class Disassembler {
         Program program = new Program(code,startAddress);
 
         while (program.hasMore()) {
-            Instruction instruction = instructionSet.decode(program);
+            Instruction instruction = null;
+            if (program.currentOffset() < bytesToSkip) {
+                instruction = InvalidInstruction.from(program);
+            }
+            else {
+                instruction = instructionSet.decode(program);
+            }
             instructions.add(instruction);
             
             boolean between = (instruction.getOperandValue() >= startAddress)
@@ -91,6 +98,10 @@ public class Disassembler {
         
         public Builder startingAddress(int address) {
             disassembler.startAddress = address;
+            return this;
+        }
+        public Builder bytesToSkip(int skip) {
+            disassembler.bytesToSkip = skip;
             return this;
         }
         public Builder use(InstructionSet instructionSet) {

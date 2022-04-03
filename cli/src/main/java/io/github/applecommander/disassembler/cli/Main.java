@@ -27,6 +27,10 @@ public class Main implements Callable<Integer> {
             description = "Set start address for application.")
     private int startAddress;
     
+    @Option(names = { "--offset" }, converter = IntegerTypeConverter.class, 
+            description = "Skip offset bytes into binary before disassembling.")
+    private int offset;
+    
     @Option(names = { "--hide-labels" }, negatable = true, description = "Hide labels.")
     public void selectLabelEmitter(boolean flag) {
         emitter = flag ? this::emitWithLabels : this::emitRaw;
@@ -62,6 +66,7 @@ public class Main implements Callable<Integer> {
         
         List<Instruction> instructions = Disassembler.with(code)
                 .startingAddress(startAddress)
+                .bytesToSkip(offset)
                 .use(cpuSelection.get())
                 .section(labels)
                 .decode();
