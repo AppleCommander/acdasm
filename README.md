@@ -1,5 +1,8 @@
 # Apple Disassembler
 
+[![Current Release](https://img.shields.io/github/release/AppleCommander/acdasm.svg)](https://github.com/AppleCommander/acdasm/releases)
+![License](https://img.shields.io/github/license/AppleCommander/acdasm) 
+
 This project is primarily created to supply a reusable Java disassembler for the AppleCommander project.
 
 ## CLI
