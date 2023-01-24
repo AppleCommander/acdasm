@@ -43,7 +43,7 @@ public class Disassembler {
         while (program.hasMore()) {
             Instruction instruction = null;
             if (program.currentOffset() < bytesToSkip) {
-                instruction = InvalidInstruction.from(program);
+                instruction = SkippedInstruction.from(program);
             }
             else {
                 instruction = instructionSet.decode(program);

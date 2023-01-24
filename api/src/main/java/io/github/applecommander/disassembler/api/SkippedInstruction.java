@@ -2,18 +2,18 @@ package io.github.applecommander.disassembler.api;
 
 import java.util.Optional;
 
-public class InvalidInstruction implements Instruction {
+public class SkippedInstruction implements Instruction {
     public static Instruction from(Program program) {
         int currentAddress = program.currentAddress();  // Need capture before read
         byte[] code = program.read(1);
-        return new InvalidInstruction(currentAddress, code);
+        return new SkippedInstruction(currentAddress, code);
     }
     
     private int address;
     private byte[] code;
     private String addressLabel;
     
-    InvalidInstruction(int address, byte[] code) {
+    SkippedInstruction(int address, byte[] code) {
         this.address = address;
         this.code = code;
     }
@@ -45,7 +45,7 @@ public class InvalidInstruction implements Instruction {
     
     @Override
     public String getOpcodeMnemonic() {
-        return "???";
+        return "---";
     }
 
     @Override
