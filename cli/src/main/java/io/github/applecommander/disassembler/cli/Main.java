@@ -48,12 +48,27 @@ public class Main implements Callable<Integer> {
     private Path file;
     
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new Main()).execute(args);
+        int exitCode = new CommandLine(new Main())
+                           .setExecutionExceptionHandler(new PrintExceptionMessageHandler())
+                           .execute(args);
         System.exit(exitCode);
     }
     
     @Override
     public Integer call() throws Exception {
+        final int MAX_ADDRESS = 0xFFFF;
+        final int MAX_OFFSET = 0xFFFF;
+
+        if (startAddress < 0 || startAddress > MAX_ADDRESS) {
+            String errormsg = String.format("start address(%d) is out of range(0-%d).", startAddress, MAX_ADDRESS);
+            throw new IllegalArgumentException(errormsg);
+        }
+
+        if (offset < 0 || offset > MAX_OFFSET) {
+            String errormsg = String.format("offset(%d) is out of range(0-%d).", offset, MAX_OFFSET);
+            throw new IllegalArgumentException(errormsg);
+        }
+
         final byte[] code = Files.readAllBytes(file);
         
         if (labels.contains("All")) {
