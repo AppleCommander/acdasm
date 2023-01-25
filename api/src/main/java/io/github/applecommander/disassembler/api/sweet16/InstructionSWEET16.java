@@ -63,7 +63,7 @@ public class InstructionSWEET16 implements Instruction {
             return Byte.toUnsignedInt(code[1]) + Byte.toUnsignedInt(code[2])*256;
         case 2:
             if (addressMode.isOperandRelativeAddress()) {
-                return address + 2 + code[1];   // allow sign extension
+                return (address + 2 + code[1]) & 0xffff;   // allow sign extension
             }
             else {
                 return Byte.toUnsignedInt(code[1]);
