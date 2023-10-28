@@ -9,25 +9,31 @@ This project is primarily created to supply a reusable Java disassembler for the
 
 ```
 $ acdasm --help                                
-Usage: acdasm [-hV] [--[no-]labels] [-a=<startAddress>] [--6502S | --SWEET16 |
-              --6502X | --65C02 | --6502] <file>
+Usage: acdasm [-hV] [--[no-]hide-labels] [-a=<startAddress>]
+              [--offset=<offset>] [--labels=<labels>[,<labels>...]]... [--6502X
+              | --65C02 | --6502S | --6502 | --SWEET16] <file>
 
 AC Disassembler.
-      <file>          File to disassemble.
+      <file>               File to disassemble.
 
 Options:
   -a, --addr, --origin=<startAddress>
-                      Set start address for application.
-  -h, --help          Show this help message and exit.
-      --[no-]labels   Show/Hide labels.
-  -V, --version       Print version information and exit.
+                           Set start address for application.
+  -h, --help               Show this help message and exit.
+      --[no-]hide-labels   Hide labels.
+      --labels=<labels>[,<labels>...]
+                           Select which library labels to load (default =
+                             'All'; options are 'F800', 'Applesoft', 'ProDOS',
+                             'DOS33', 'None').
+      --offset=<offset>    Skip offset bytes into binary before disassembling.
+  -V, --version            Print version information and exit.
 
 CPU Selection:
-      --6502          MOS 6502.
-      --6502S         MOS 6502 with SWEET16 switching.
-      --6502X         MOS 6502 + 'illegal' instructions.
-      --65C02         WDC 65C02.
-      --SWEET16       SWEET16.
+      --6502               MOS 6502.
+      --6502S              MOS 6502 with SWEET16 switching.
+      --6502X              MOS 6502 + 'illegal' instructions.
+      --65C02              WDC 65C02.
+      --SWEET16            SWEET16.
 ```
 
 Sample runs:
