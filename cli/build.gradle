@@ -24,6 +24,6 @@ bootJar {
   archiveBaseName = 'acdasm'
   manifest {
       attributes 'Implementation-Title': "AppleCommander 'acdis'",
-                 'Implementation-Version': version
+                 'Implementation-Version': archiveVersion
   }
 }
