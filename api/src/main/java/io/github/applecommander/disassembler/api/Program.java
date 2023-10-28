@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class Program {
+    static final int ADDRESS_SPACE = 64 * 1024; //64k Address Space
+
     private int baseAddress;
     private int offset;
     private byte[] code;
@@ -12,6 +14,7 @@ public class Program {
         Objects.requireNonNull(code);
         this.baseAddress = address;
         this.code = code;
+        this.offset = 0;
     }
 
     public boolean hasMore() {
@@ -29,6 +32,6 @@ public class Program {
         return offset;
     }
     public int currentAddress() {
-        return baseAddress+offset;
+        return (baseAddress+offset) % ADDRESS_SPACE; //wrap around to 0 if address exceeds the address space
     }
 }
