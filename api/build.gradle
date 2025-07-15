@@ -21,6 +21,7 @@ dependencies {
 }
 
 jar {
+    archiveVersion = acdasmVersion
     manifest {
         attributes 'Implementation-Title': "AppleCommander 'acdis'",
                    'Implementation-Version': acdasmVersion

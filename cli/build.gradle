@@ -24,14 +24,19 @@ compileJava {
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
 
+jar {
+    archiveVersion = acdasmVersion
+}
+
 application {
     mainClass = 'io.github.applecommander.disassembler.cli.Main'
 }
 
 bootJar {
-  archiveBaseName = 'acdasm'
-  manifest {
-      attributes 'Implementation-Title': "AppleCommander 'acdasm'",
-                 'Implementation-Version': acdasmVersion
-  }
+    archiveBaseName = 'acdasm'
+    archiveVersion = acdasmVersion
+    manifest {
+        attributes 'Implementation-Title': "AppleCommander 'acdasm'",
+                   'Implementation-Version': acdasmVersion
+    }
 }
