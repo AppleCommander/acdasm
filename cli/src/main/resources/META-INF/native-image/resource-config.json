@@ -1,0 +1,28 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "META-INF/MANIFEST.MF"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.ini4j.spi.EscapeTool\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.ini4j.spi.IniBuilder\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.ini4j.spi.IniParser\\E"
+      },
+      {
+        "pattern": "\\Qaddresses.ini\\E"
+      }
+    ]
+  },
+  "bundles": []
+}
