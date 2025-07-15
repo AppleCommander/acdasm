@@ -24,4 +24,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: acdasm-${{ matrix.os }}
-          path: cli/build/nativeCompile/cli*
+          path: cli/build/native/nativeCompile/cli*
