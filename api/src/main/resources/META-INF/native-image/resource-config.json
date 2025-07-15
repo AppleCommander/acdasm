@@ -1,0 +1,12 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": ".*\\.ini"
+      },
+      {
+        "pattern": "META-INF/MANIFEST.MF"
+      }
+    ]
+  }
+}

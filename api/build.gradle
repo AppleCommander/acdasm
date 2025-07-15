@@ -20,8 +20,15 @@ dependencies {
     implementation 'org.ini4j:ini4j:0.5.4'
 }
 
+jar {
+    manifest {
+        attributes 'Implementation-Title': "AppleCommander 'acdis'",
+                   'Implementation-Version': acdasmVersion
+    }
+}
+
 javadoc {
-    title = "adasm ${version}"
+    title = "adasm ${acdasmVersion}"
     source = sourceSets.main.allJava
     options.addStringOption('Xdoclint:none', '-quiet')
 }
