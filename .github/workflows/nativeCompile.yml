@@ -2,8 +2,8 @@ name: GraalVM Native Image builds
 on: [push, pull_request]
 jobs:
   build:
-    name: acdasm on ${{ matrix.os }}
-    runs-on: [ "${{ matrix.os }}", "${{ matrix.arch }}" ]
+    name: acdasm on ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}, ${{ matrix.arch }}
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
@@ -27,5 +27,5 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: acdasm-${{ matrix.os }}
+          name: acdasm-${{ matrix.os }}-${{ matrix.arch }}
           path: cli/build/native/nativeCompile/acdasm*
