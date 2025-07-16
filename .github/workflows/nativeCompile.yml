@@ -3,16 +3,14 @@ on: [push, pull_request]
 jobs:
   build:
     name: acdasm on ${{ matrix.os }}-${{ matrix.arch }}
-    runs-on: ${{ matrix.runner }}
+    runs-on: [${{ matrix.os }}, ${{ matrix.arch }}]
     strategy:
       matrix:
-        # See https://github.com/actions/runner-images?tab=readme-ov-file#available-images
-        runner:
-        - ubuntu-latest       # Ubuntu x86_64
-        - ubuntu-24.04-arm    # Ubuntu arm64
-        - windows-latest      # Windows x86_64
-        - macos-13            # MacOS x86_64
-        - macos-latest]       # MacOS aarch64
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        arch: [x64, arm64]
+        exclude:
+        - os: windows-latest
+          arch: arm64
     steps:
       - uses: actions/checkout@v4
 
