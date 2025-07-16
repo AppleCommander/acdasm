@@ -3,7 +3,7 @@ on: [push, pull_request]
 jobs:
   build:
     name: acdasm on ${{ matrix.os }}-${{ matrix.arch }}
-    runs-on: [${{ matrix.os }}, ${{ matrix.arch }}]
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
