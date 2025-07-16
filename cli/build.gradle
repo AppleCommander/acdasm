@@ -40,3 +40,13 @@ bootJar {
                    'Implementation-Version': acdasmVersion
     }
 }
+
+graalvmNative {
+    String osName = System.getProperty('os.name').toLowerCase().split()[0]
+    String osArch = System.getProperty('os.arch').toLowerCase().split()[0]
+    binaries {
+        named("main") {
+            imageName.set("acdasm-${osName}-${osArch}-${acdasmVersion}")
+        }
+    }
+}
