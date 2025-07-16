@@ -3,10 +3,14 @@ on: [push, pull_request]
 jobs:
   build:
     name: acdasm on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: [ "${{ matrix.os }}", "${{ matrix.arch }}" ]
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
+        arch: [x64, arm64]
+        exclude:
+        - os: windows-latest
+          arch: arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -24,4 +28,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: acdasm-${{ matrix.os }}
-          path: cli/build/native/nativeCompile/cli*
+          path: cli/build/native/nativeCompile/acdasm*
