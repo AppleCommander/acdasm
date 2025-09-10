@@ -82,6 +82,9 @@ public class InstructionSet6502 implements InstructionSet {
     public String opcodeExample(int op) {
         AddressMode6502 addressMode = addressModes[op];
         Opcode6502 opcode = opcodes[op];
+        if (opcode == Opcode6502.ZZZ) {
+            return "-";
+        }
 
         String fmt = addressMode.getInstructionFormat();
         String name = opcode.name();
