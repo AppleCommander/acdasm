@@ -39,6 +39,9 @@ public class Program {
     public byte peek() {
         return hasMore() ? code[offset] : 0;
     }
+    public byte peek(int n) {
+        return offset+n < code.length ? code[offset+n] : 0;
+    }
     public byte[] read(int n) {
         byte[] x = Arrays.copyOfRange(code, offset, offset+n);
         offset += n;

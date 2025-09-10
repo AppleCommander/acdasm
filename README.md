@@ -8,10 +8,10 @@ This project is primarily created to supply a reusable Java disassembler for the
 ## CLI
 
 ```
-$ acdasm --help                                
+$ acdasm --help
 Usage: acdasm [-hV] [--[no-]hide-labels] [-a=<startAddress>]
-              [--offset=<offset>] [--labels=<labels>[,<labels>...]]... [--6502X
-              | --65C02 | --6502S | --6502 | --SWEET16] <file>
+              [--offset=<offset>] [--labels=<labels>[,<labels>...]]... [--6502S
+              | --Z80 | --65C02 | --6502X | --SWEET16 | --6502] <file>
 
 AC Disassembler.
       <file>               File to disassemble.
@@ -34,6 +34,7 @@ CPU Selection:
       --6502X              MOS 6502 + 'illegal' instructions.
       --65C02              WDC 65C02.
       --SWEET16            SWEET16.
+      --Z80                Zilog Z80.
 ```
 
 Sample runs:
@@ -45,6 +46,21 @@ $ acdasm --6502 -a 0x220 COPY.OBJ1.bin
 0223- A0 B7                LDY #$B7
 0225- A9 89     L0225      LDA #$89
 0227- 20 80 02             JSR L0280
+...
+```
+
+```
+$ acdasm --Z80 DUMP.COM
+0100- 21 00 00             LD HL,0000H
+0103- 39                   ADD SP
+0104- 22 15 02             LD L0215,HL
+0107- 31 57 02             LD SP,L0257
+010A- CD C1 01             CALL L01C1
+010D- FE FF                CP FFH
+010F- C2 1B 01             JP NZ,L011B
+0112- 11 F3 01             LD DE,L01F3
+0115- CD 9C 01             CALL L019C
+0118- C3 51 01             JP L0151
 ...
 ```
 

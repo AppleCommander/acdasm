@@ -28,6 +28,7 @@ import io.github.applecommander.disassembler.api.InstructionSet;
 import io.github.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import io.github.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import io.github.applecommander.disassembler.api.switching6502.InstructionSet6502Switching;
+import io.github.applecommander.disassembler.api.z80.InstructionSetZ80;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -165,6 +166,10 @@ public class Main implements Callable<Integer> {
         @Option(names = { "--6502S" }, description = "MOS 6502 with SWEET16 switching.")
         public void select6502Switching(boolean flag) {
             this.instructionSet = InstructionSet6502Switching.withSwitching();
+        }
+        @Option(names = { "--Z80" }, description = "Zilog Z80.")
+        public void selectZ80(boolean flag) {
+            this.instructionSet = new InstructionSetZ80();
         }
     }
 }
