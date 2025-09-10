@@ -169,7 +169,7 @@ public class Main implements Callable<Integer> {
         }
         @Option(names = { "--Z80" }, description = "Zilog Z80.")
         public void selectZ80(boolean flag) {
-            this.instructionSet = new InstructionSetZ80();
+            this.instructionSet = InstructionSetZ80.forZ80();
         }
     }
 }

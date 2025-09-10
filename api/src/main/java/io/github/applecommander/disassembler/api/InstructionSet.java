@@ -19,4 +19,7 @@ package io.github.applecommander.disassembler.api;
 public interface InstructionSet {
     int defaultStartAddress();
     Instruction decode(Program program);
+    // to support the generated report
+    String name();
+    String opcodeExample(int opcode);
 }

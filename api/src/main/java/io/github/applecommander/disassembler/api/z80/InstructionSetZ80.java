@@ -25,38 +25,17 @@ import java.util.Set;
 import static io.github.applecommander.disassembler.api.z80.InstructionSetZ80.Flag.*;
 
 public class InstructionSetZ80 implements InstructionSet {
-    // For development...
-    public static void main(String... args) {
-        report("'Root' opcodes", ROOT_OPCODES);
-        report("'ED' opcodes", ED_OPCODES);
-        report("'CB' opcodes", CB_OPCODES);
+    public static InstructionSetZ80 forZ80() {
+        return new InstructionSetZ80();
     }
-    private static void report(String name, Opcode[] opcodes) {
-        System.out.println(name);
-        System.out.print("    ");
-        for (int x=0; x<16; x++) {
-            System.out.printf("_%1X    ", x);
-        }
-        System.out.println();
-        for (int y=0; y<256; y+=16) {
-            System.out.printf("%1X_: ", y>>4);
-            for (int x=0; x<16; x++) {
-                Opcode opcode = opcodes[y|x];
-                String text = "-";
-                if (opcode != null) {
-                    text = opcode.mnemonic;
-                }
-                System.out.printf("%-5s ", text);
-            }
-            System.out.println();
-        }
-    }
+
+    // Prevent construction
+    private InstructionSetZ80() {}
 
     @Override
     public int defaultStartAddress() {
         return 0x100;   // This is the start address for COM files
     }
-
 
     @Override
     public Instruction decode(Program program) {
@@ -123,6 +102,27 @@ public class InstructionSetZ80 implements InstructionSet {
         }
         //
         return new InstructionZ80(addr, op.mnemonic, operandFmt, operandValue, program.read(length));
+    }
+
+    @Override
+    public String name() {
+        return "Z80";
+    }
+
+    @Override
+    public String opcodeExample(int op) {
+        Opcode opcode = ROOT_OPCODES[op];
+        String fmt = opcode.fmt
+                .replace("rp","rr")         // register pair
+                .replace("data", "VALUE")   // both 8-bit and 16-bit values
+                .replace("ddd", "r")        // register
+                .replace("sss", "r")        // register
+                .replace("offset", "ADDR")  // address offset
+                .replace("add", "ADDR");    // address
+        // cc remains as condition code
+        // n remains as n
+        // port remains as port
+        return String.format("%s %s", opcode.mnemonic, fmt);
     }
 
     record Opcode(int opcode, String mnemonic, String fmt, Set<Flag> flags) {

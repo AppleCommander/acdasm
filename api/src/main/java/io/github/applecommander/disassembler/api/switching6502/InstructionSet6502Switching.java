@@ -55,6 +55,16 @@ public class InstructionSet6502Switching implements InstructionSet {
         return strategy.apply(program);
     }
 
+    @Override
+    public String name() {
+        return "6502<>SWEET16";
+    }
+
+    @Override
+    public String opcodeExample(int opcode) {
+        throw new RuntimeException("Not implemented");
+    }
+
     Instruction decode6502(Program program) {
         Instruction instruction = mos6502.decode(program);
         if ("JSR".equals(instruction.getOpcodeMnemonic()) && instruction.getOperandValue() == 0xf689) {

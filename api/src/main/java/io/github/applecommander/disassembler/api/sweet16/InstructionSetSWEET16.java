@@ -61,4 +61,40 @@ public class InstructionSetSWEET16 implements InstructionSet {
 
         return new InstructionSWEET16(addressMode, opcode, register, currentAddress, code);
     }
+
+    @Override
+    public String name() {
+        return "SWEET16";
+    }
+
+    @Override
+    public String opcodeExample(int op) {
+        int low = op & 0x0f;
+        int high = (op & 0xf0) >> 4;
+
+        AddressModeSWEET16 addressMode;
+        OpcodeSWEET16 opcode;
+        if (high == 0) {
+            opcode = OpcodeSWEET16.NON_REGISTER_OPS[low];
+            addressMode = AddressModeSWEET16.NON_REGISTER_OPS[low];
+        }
+        else {
+            opcode = OpcodeSWEET16.REGISTER_OPS[high];
+            addressMode = AddressModeSWEET16.REGISTER_OPS[high];
+        }
+
+        if (opcode == OpcodeSWEET16.ZZZ) {
+            addressMode = AddressModeSWEET16.IMP;
+        }
+
+        String fmt = addressMode.getInstructionFormat();
+        String name = opcode.name();
+        return switch (addressMode) {
+            case CON -> String.format(fmt, name, low, "VALUE");
+            case ABS -> String.format(fmt, name, low, "ADDR");
+            case DIR, IND -> String.format(fmt, name, low);
+            case BRA -> String.format(fmt, name, "ADDR");
+            case IMP -> name;
+        };
+    }
 }
