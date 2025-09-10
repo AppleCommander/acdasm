@@ -28,7 +28,12 @@ public class InstructionSetSWEET16 implements InstructionSet {
     private InstructionSetSWEET16() {
         // Prevent construction
     }
-    
+
+    @Override
+    public int defaultStartAddress() {
+        return 0x300;
+    }
+
     @Override
     public Instruction decode(Program program) {
         int op = Byte.toUnsignedInt(program.peek());

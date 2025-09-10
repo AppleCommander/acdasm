@@ -40,6 +40,11 @@ public class InstructionSet6502 implements InstructionSet {
     }
 
     @Override
+    public int defaultStartAddress() {
+        return 0x300;
+    }
+
+    @Override
     public Instruction decode(Program program) {
         int op = Byte.toUnsignedInt(program.peek());
         

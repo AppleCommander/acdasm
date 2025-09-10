@@ -43,6 +43,11 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
+    public int defaultStartAddress() {
+        return 0x300;
+    }
+
+    @Override
     public Instruction decode(Program program) {
         if (!pending.isEmpty()) {
             return pending.remove();

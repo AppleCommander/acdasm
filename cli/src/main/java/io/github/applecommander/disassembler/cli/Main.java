@@ -39,9 +39,9 @@ import picocli.CommandLine.Parameters;
          optionListHeading = "%nOptions:%n",
          description = "AC Disassembler.")
 public class Main implements Callable<Integer> {
-    @Option(names = { "-a", "--addr", "--origin" }, defaultValue = "$300", converter = IntegerTypeConverter.class,
+    @Option(names = { "-a", "--addr", "--origin" }, converter = IntegerTypeConverter.class,
             description = "Set start address for application.")
-    private int startAddress;
+    private int startAddress = -1;
     
     @Option(names = { "--offset" }, converter = IntegerTypeConverter.class, 
             description = "Skip offset bytes into binary before disassembling.")
@@ -74,6 +74,10 @@ public class Main implements Callable<Integer> {
     public Integer call() throws Exception {
         final int MAX_ADDRESS = 0xFFFF;
         final int MAX_OFFSET = 0xFFFF;
+
+        if (startAddress == -1) {
+            startAddress = cpuSelection.instructionSet.defaultStartAddress();
+        }
 
         if (startAddress < 0 || startAddress > MAX_ADDRESS) {
             String errormsg = String.format("start address(%d) is out of range(0-%d).", startAddress, MAX_ADDRESS);
