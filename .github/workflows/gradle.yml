@@ -10,6 +10,8 @@ name: Build acdasm CLI and API
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - '*'
   pull_request:
     branches: [ "main" ]
 
