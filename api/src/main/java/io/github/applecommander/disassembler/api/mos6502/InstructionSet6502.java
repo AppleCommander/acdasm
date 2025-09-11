@@ -20,23 +20,32 @@ import io.github.applecommander.disassembler.api.Instruction;
 import io.github.applecommander.disassembler.api.InstructionSet;
 import io.github.applecommander.disassembler.api.Program;
 
+import java.util.List;
+
 public class InstructionSet6502 implements InstructionSet {
     public static InstructionSet6502 for6502() {
-        return new InstructionSet6502(AddressMode6502.MOS6502, Opcode6502.MOS6502);
+        return new InstructionSet6502("6502", AddressMode6502.MOS6502, Opcode6502.MOS6502);
     }
     public static InstructionSet6502 for6502withIllegalInstructions() {
-        return new InstructionSet6502(AddressMode6502.MOS6502, Opcode6502.MOS6502_WITH_ILLEGAL);
+        return new InstructionSet6502("6502X", AddressMode6502.MOS6502, Opcode6502.MOS6502_WITH_ILLEGAL);
     }
     public static InstructionSet6502 for65C02() {
-        return new InstructionSet6502(AddressMode6502.WDC65C02, Opcode6502.WDC65C02);
+        return new InstructionSet6502("65C02", AddressMode6502.WDC65C02, Opcode6502.WDC65C02);
     }
     
-    private AddressMode6502[] addressModes;
-    private Opcode6502[] opcodes;
+    private final AddressMode6502[] addressModes;
+    private final Opcode6502[] opcodes;
+    private final String name;
     
-    private InstructionSet6502(AddressMode6502[] addressModes, Opcode6502[] opcodes) {
+    private InstructionSet6502(String name, AddressMode6502[] addressModes, Opcode6502[] opcodes) {
+        this.name = name;
         this.addressModes = addressModes;
         this.opcodes = opcodes;
+    }
+
+    @Override
+    public int defaultStartAddress() {
+        return 0x300;
     }
 
     @Override
@@ -64,5 +73,35 @@ public class InstructionSet6502 implements InstructionSet {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public List<OpcodeTable> opcodeTables() {
+        return List.of(new OpcodeTable6502());
+    }
+
+    private class OpcodeTable6502 implements OpcodeTable {
+        @Override
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public String opcodeExample(int op) {
+            AddressMode6502 addressMode = addressModes[op];
+            Opcode6502 opcode = opcodes[op];
+            if (opcode == Opcode6502.ZZZ) {
+                return "-";
+            }
+
+            String fmt = addressMode.getInstructionFormat();
+            String name = opcode.name();
+            return switch (addressMode) {
+                case ACC, IMP -> String.format(fmt, name);
+                case ABS, ABSX, ABSY, REL -> String.format(fmt, name, "ADDR");
+                case IMM -> String.format(fmt, name, "VALUE");
+                case IND, INDX, INDY, ZP, ZPX, ZPY -> String.format(fmt, name, "ZP");
+            };
+        }
     }
 }

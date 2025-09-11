@@ -28,6 +28,7 @@ import io.github.applecommander.disassembler.api.InstructionSet;
 import io.github.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import io.github.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import io.github.applecommander.disassembler.api.switching6502.InstructionSet6502Switching;
+import io.github.applecommander.disassembler.api.z80.InstructionSetZ80;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -39,9 +40,9 @@ import picocli.CommandLine.Parameters;
          optionListHeading = "%nOptions:%n",
          description = "AC Disassembler.")
 public class Main implements Callable<Integer> {
-    @Option(names = { "-a", "--addr", "--origin" }, defaultValue = "$300", converter = IntegerTypeConverter.class,
+    @Option(names = { "-a", "--addr", "--origin" }, converter = IntegerTypeConverter.class,
             description = "Set start address for application.")
-    private int startAddress;
+    private int startAddress = -1;
     
     @Option(names = { "--offset" }, converter = IntegerTypeConverter.class, 
             description = "Skip offset bytes into binary before disassembling.")
@@ -74,6 +75,10 @@ public class Main implements Callable<Integer> {
     public Integer call() throws Exception {
         final int MAX_ADDRESS = 0xFFFF;
         final int MAX_OFFSET = 0xFFFF;
+
+        if (startAddress == -1) {
+            startAddress = cpuSelection.instructionSet.defaultStartAddress();
+        }
 
         if (startAddress < 0 || startAddress > MAX_ADDRESS) {
             String errormsg = String.format("start address(%d) is out of range(0-%d).", startAddress, MAX_ADDRESS);
@@ -161,6 +166,10 @@ public class Main implements Callable<Integer> {
         @Option(names = { "--6502S" }, description = "MOS 6502 with SWEET16 switching.")
         public void select6502Switching(boolean flag) {
             this.instructionSet = InstructionSet6502Switching.withSwitching();
+        }
+        @Option(names = { "--Z80" }, description = "Zilog Z80.")
+        public void selectZ80(boolean flag) {
+            this.instructionSet = InstructionSetZ80.forZ80();
         }
     }
 }

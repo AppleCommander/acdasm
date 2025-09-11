@@ -17,6 +17,7 @@
 package io.github.applecommander.disassembler.api.switching6502;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Function;
@@ -43,11 +44,21 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
+    public int defaultStartAddress() {
+        return 0x300;
+    }
+
+    @Override
     public Instruction decode(Program program) {
         if (!pending.isEmpty()) {
             return pending.remove();
         }
         return strategy.apply(program);
+    }
+
+    @Override
+    public List<OpcodeTable> opcodeTables() {
+        throw new RuntimeException("Not implemented");
     }
 
     Instruction decode6502(Program program) {
