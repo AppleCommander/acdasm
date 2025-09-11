@@ -17,6 +17,7 @@
 package io.github.applecommander.disassembler.api.switching6502;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Function;
@@ -56,12 +57,7 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
-    public String name() {
-        return "6502<>SWEET16";
-    }
-
-    @Override
-    public String opcodeExample(int opcode) {
+    public List<OpcodeTable> opcodeTables() {
         throw new RuntimeException("Not implemented");
     }
 

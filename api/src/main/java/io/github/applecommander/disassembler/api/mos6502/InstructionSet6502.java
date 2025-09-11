@@ -20,6 +20,8 @@ import io.github.applecommander.disassembler.api.Instruction;
 import io.github.applecommander.disassembler.api.InstructionSet;
 import io.github.applecommander.disassembler.api.Program;
 
+import java.util.List;
+
 public class InstructionSet6502 implements InstructionSet {
     public static InstructionSet6502 for6502() {
         return new InstructionSet6502("6502", AddressMode6502.MOS6502, Opcode6502.MOS6502);
@@ -74,25 +76,32 @@ public class InstructionSet6502 implements InstructionSet {
     }
 
     @Override
-    public String name() {
-        return name;
+    public List<OpcodeTable> opcodeTables() {
+        return List.of(new OpcodeTable6502());
     }
 
-    @Override
-    public String opcodeExample(int op) {
-        AddressMode6502 addressMode = addressModes[op];
-        Opcode6502 opcode = opcodes[op];
-        if (opcode == Opcode6502.ZZZ) {
-            return "-";
+    private class OpcodeTable6502 implements OpcodeTable {
+        @Override
+        public String name() {
+            return name;
         }
 
-        String fmt = addressMode.getInstructionFormat();
-        String name = opcode.name();
-        return switch (addressMode) {
-            case ACC, IMP -> String.format(fmt, name);
-            case ABS, ABSX, ABSY, REL -> String.format(fmt, name, "ADDR");
-            case IMM -> String.format(fmt, name, "VALUE");
-            case IND, INDX, INDY, ZP, ZPX, ZPY -> String.format(fmt, name, "ZP");
-        };
+        @Override
+        public String opcodeExample(int op) {
+            AddressMode6502 addressMode = addressModes[op];
+            Opcode6502 opcode = opcodes[op];
+            if (opcode == Opcode6502.ZZZ) {
+                return "-";
+            }
+
+            String fmt = addressMode.getInstructionFormat();
+            String name = opcode.name();
+            return switch (addressMode) {
+                case ACC, IMP -> String.format(fmt, name);
+                case ABS, ABSX, ABSY, REL -> String.format(fmt, name, "ADDR");
+                case IMM -> String.format(fmt, name, "VALUE");
+                case IND, INDX, INDY, ZP, ZPX, ZPY -> String.format(fmt, name, "ZP");
+            };
+        }
     }
 }

@@ -20,6 +20,8 @@ import io.github.applecommander.disassembler.api.Instruction;
 import io.github.applecommander.disassembler.api.InstructionSet;
 import io.github.applecommander.disassembler.api.Program;
 
+import java.util.List;
+
 public class InstructionSetSWEET16 implements InstructionSet {
     public static InstructionSetSWEET16 forSWEET16() {
         return new InstructionSetSWEET16();
@@ -63,38 +65,45 @@ public class InstructionSetSWEET16 implements InstructionSet {
     }
 
     @Override
-    public String name() {
-        return "SWEET16";
+    public List<OpcodeTable> opcodeTables() {
+        return List.of(new OpcodeTableSWEET16());
     }
 
-    @Override
-    public String opcodeExample(int op) {
-        int low = op & 0x0f;
-        int high = (op & 0xf0) >> 4;
-
-        AddressModeSWEET16 addressMode;
-        OpcodeSWEET16 opcode;
-        if (high == 0) {
-            opcode = OpcodeSWEET16.NON_REGISTER_OPS[low];
-            addressMode = AddressModeSWEET16.NON_REGISTER_OPS[low];
-        }
-        else {
-            opcode = OpcodeSWEET16.REGISTER_OPS[high];
-            addressMode = AddressModeSWEET16.REGISTER_OPS[high];
+    private static class OpcodeTableSWEET16 implements OpcodeTable {
+        @Override
+        public String name() {
+            return "SWEET16";
         }
 
-        if (opcode == OpcodeSWEET16.ZZZ) {
-            addressMode = AddressModeSWEET16.IMP;
-        }
+        @Override
+        public String opcodeExample(int op) {
+            int low = op & 0x0f;
+            int high = (op & 0xf0) >> 4;
 
-        String fmt = addressMode.getInstructionFormat();
-        String name = opcode.name();
-        return switch (addressMode) {
-            case CON -> String.format(fmt, name, low, "VALUE");
-            case ABS -> String.format(fmt, name, low, "ADDR");
-            case DIR, IND -> String.format(fmt, name, low);
-            case BRA -> String.format(fmt, name, "ADDR");
-            case IMP -> name;
-        };
+            AddressModeSWEET16 addressMode;
+            OpcodeSWEET16 opcode;
+            if (high == 0) {
+                opcode = OpcodeSWEET16.NON_REGISTER_OPS[low];
+                addressMode = AddressModeSWEET16.NON_REGISTER_OPS[low];
+            }
+            else {
+                opcode = OpcodeSWEET16.REGISTER_OPS[high];
+                addressMode = AddressModeSWEET16.REGISTER_OPS[high];
+            }
+
+            if (opcode == OpcodeSWEET16.ZZZ) {
+                addressMode = AddressModeSWEET16.IMP;
+            }
+
+            String fmt = addressMode.getInstructionFormat();
+            String name = opcode.name();
+            return switch (addressMode) {
+                case CON -> String.format(fmt, name, low, "VALUE");
+                case ABS -> String.format(fmt, name, low, "ADDR");
+                case DIR, IND -> String.format(fmt, name, low);
+                case BRA -> String.format(fmt, name, "ADDR");
+                case IMP -> name;
+            };
+        }
     }
 }

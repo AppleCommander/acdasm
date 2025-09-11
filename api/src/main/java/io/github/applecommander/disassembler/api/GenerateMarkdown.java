@@ -6,51 +6,55 @@ import io.github.applecommander.disassembler.api.z80.InstructionSetZ80;
 
 import java.io.*;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Map;
+
+import static io.github.applecommander.disassembler.api.InstructionSet.OpcodeTable;
 
 public class GenerateMarkdown {
     public static void main(String[] args) throws IOException {
-        List<InstructionSet> instructionSets = List.of(
-                InstructionSet6502.for6502(),
-                InstructionSet6502.for6502withIllegalInstructions(),
-                InstructionSet6502.for65C02(),
-                InstructionSetSWEET16.forSWEET16(),
-                InstructionSetZ80.forZ80()
+        Map<String,InstructionSet> instructionSets = Map.of(
+                "6502", InstructionSet6502.for6502(),
+                "6502X", InstructionSet6502.for6502withIllegalInstructions(),
+                "65C02", InstructionSet6502.for65C02(),
+                "SWEET16", InstructionSetSWEET16.forSWEET16(),
+                "Z80", InstructionSetZ80.forZ80()
             );
 
-        for (InstructionSet instructionSet : instructionSets) {
-            String filename = String.format("docs/%s.md", instructionSet.name());
+        for (Map.Entry<String,InstructionSet> entry : instructionSets.entrySet()) {
+            String filename = String.format("docs/%s.md", entry.getKey());
             try (
                 OutputStream out = new FileOutputStream(filename);
                 PrintWriter pw = new PrintWriter(out)
             ) {
-                createMarkdownTable(pw, instructionSet.name(), instructionSet::opcodeExample);
+                createMarkdownTable(pw, entry.getValue().opcodeTables());
             }
         }
     }
 
-    private static void createMarkdownTable(PrintWriter pw, String name, Function<Integer,String> fn) {
-        pw.printf("# %s\n", name);
-        // Header
-        pw.print("| |");
-        for (int x=0; x<16; x++) {
-            pw.printf("_%1X |", x);
-        }
-        pw.println();
-        // Set alignment
-        pw.print("| :--- |");
-        for (int x=0; x<16; x++) {
-            pw.print(" :--- |");
-        }
-        pw.println();
-        // Generate table
-        for (int y = 0; y < 256; y += 16) {
-            pw.printf("%1X_ |", y >> 4);
+    private static void createMarkdownTable(PrintWriter pw, List<OpcodeTable> opcodeTables) {
+        for (OpcodeTable opcodeTable : opcodeTables) {
+            pw.printf("# %s\n", opcodeTable.name());
+            // Header
+            pw.print("| |");
             for (int x = 0; x < 16; x++) {
-                String text = fn.apply(y|x);
-                pw.printf("%s |", text);
+                pw.printf("_%1X |", x);
             }
             pw.println();
+            // Set alignment
+            pw.print("| :--- |");
+            for (int x = 0; x < 16; x++) {
+                pw.print(" :--- |");
+            }
+            pw.println();
+            // Generate table
+            for (int y = 0; y < 256; y += 16) {
+                pw.printf("%1X_ |", y >> 4);
+                for (int x = 0; x < 16; x++) {
+                    String text = opcodeTable.opcodeExample(y | x);
+                    pw.printf("%s |", text);
+                }
+                pw.println();
+            }
         }
         // Footers...
         pw.printf("\n\n(Automatically generated; do not change manually!)\n\n");

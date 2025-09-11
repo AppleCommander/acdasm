@@ -20,6 +20,7 @@ import io.github.applecommander.disassembler.api.Instruction;
 import io.github.applecommander.disassembler.api.InstructionSet;
 import io.github.applecommander.disassembler.api.Program;
 
+import java.util.List;
 import java.util.Set;
 
 import static io.github.applecommander.disassembler.api.z80.InstructionSetZ80.Flag.*;
@@ -105,24 +106,46 @@ public class InstructionSetZ80 implements InstructionSet {
     }
 
     @Override
-    public String name() {
-        return "Z80";
+    public List<OpcodeTable> opcodeTables() {
+        return List.of(
+                new OpcodeTableZ80("Z80 Opcodes", ROOT_OPCODES),
+                new OpcodeTableZ80("'ED' Opcodes", ED_OPCODES),
+                new OpcodeTableZ80("'CB' Opcodes", CB_OPCODES)
+            );
     }
 
-    @Override
-    public String opcodeExample(int op) {
-        Opcode opcode = ROOT_OPCODES[op];
-        String fmt = opcode.fmt
-                .replace("rp","rr")         // register pair
-                .replace("data", "VALUE")   // both 8-bit and 16-bit values
-                .replace("ddd", "r")        // register
-                .replace("sss", "r")        // register
-                .replace("offset", "ADDR")  // address offset
-                .replace("add", "ADDR");    // address
-        // cc remains as condition code
-        // n remains as n
-        // port remains as port
-        return String.format("%s %s", opcode.mnemonic, fmt);
+    private static class OpcodeTableZ80 implements OpcodeTable {
+        private final String name;
+        private final Opcode[] opcodes;
+
+        private OpcodeTableZ80(String name, Opcode[] opcodes) {
+            this.name = name;
+            this.opcodes = opcodes;
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public String opcodeExample(int op) {
+            Opcode opcode = opcodes[op];
+            if (opcode == null) {
+                return "-";
+            }
+            String fmt = opcode.fmt
+                    .replace("rp","rr")         // register pair
+                    .replace("data", "VALUE")   // both 8-bit and 16-bit values
+                    .replace("ddd", "r")        // register
+                    .replace("sss", "r")        // register
+                    .replace("offset", "ADDR")  // address offset
+                    .replace("add", "ADDR");    // address
+            // cc remains as condition code
+            // n remains as n
+            // port remains as port
+            return String.format("%s %s", opcode.mnemonic, fmt);
+        }
     }
 
     record Opcode(int opcode, String mnemonic, String fmt, Set<Flag> flags) {

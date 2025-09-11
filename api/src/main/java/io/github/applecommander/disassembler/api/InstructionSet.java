@@ -16,10 +16,15 @@
  */
 package io.github.applecommander.disassembler.api;
 
+import java.util.List;
+
 public interface InstructionSet {
     int defaultStartAddress();
     Instruction decode(Program program);
-    // to support the generated report
-    String name();
-    String opcodeExample(int opcode);
+    List<OpcodeTable> opcodeTables();
+
+    interface OpcodeTable {
+        String name();
+        String opcodeExample(int opcode);
+    }
 }
