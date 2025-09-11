@@ -3,7 +3,7 @@
     "name": "groovy.lang.Closure"
   },
   {
-    "name": "io.github.applecommander.disassembler.cli.IntegerTypeConverter",
+    "name": "org.applecommander.disassembler.cli.IntegerTypeConverter",
     "methods": [
       {
         "name": "<init>",
@@ -12,7 +12,7 @@
     ]
   },
   {
-    "name": "io.github.applecommander.disassembler.cli.Main",
+    "name": "org.applecommander.disassembler.cli.Main",
     "allDeclaredFields": true,
     "queryAllDeclaredMethods": true,
     "methods": [
@@ -25,12 +25,12 @@
     ]
   },
   {
-    "name": "io.github.applecommander.disassembler.cli.Main$CpuSelection",
+    "name": "org.applecommander.disassembler.cli.Main$CpuSelection",
     "allDeclaredFields": true,
     "queryAllDeclaredMethods": true
   },
   {
-    "name": "io.github.applecommander.disassembler.cli.VersionProvider",
+    "name": "org.applecommander.disassembler.cli.VersionProvider",
     "allDeclaredFields": true,
     "queryAllDeclaredMethods": true,
     "methods": [

@@ -51,7 +51,7 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
             pom {
-                groupId = "net.sf.applecommander"
+                groupId = "org.applecommander"
                 artifactId = "acdasm"
                 name = 'AppleCommander Disassembler (acdasm)'
                 description = 'A reusable Java-based API for disassembling Apple-related source code.'
