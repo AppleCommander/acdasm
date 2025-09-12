@@ -98,11 +98,6 @@ public class InstructionSet6502Switching implements InstructionSet {
         }
 
         @Override
-        public int getLength() {
-            return 0;
-        }
-
-        @Override
         public byte[] getBytes() {
             return new byte[0];
         }

@@ -41,11 +41,6 @@ public class Instruction6502 implements Instruction {
     }
 
     @Override
-    public int getLength() {
-        return addressMode.getInstructionLength();
-    }
-
-    @Override
     public byte[] getBytes() {
         return code;
     }
@@ -72,7 +67,7 @@ public class Instruction6502 implements Instruction {
 
     @Override
     public int getOperandValue() {
-        switch (getLength()) {
+        switch (code.length) {
         case 3:
             return Byte.toUnsignedInt(code[1]) + Byte.toUnsignedInt(code[2])*256;
         case 2:
@@ -95,10 +90,10 @@ public class Instruction6502 implements Instruction {
     @Override
     public String formatOperandWithValue() {
         String label = "A";
-        if (addressMode.isOperandAbsoluteAddress() || addressMode.isOperandRelativeAddress()|| getLength() == 3) {
+        if (addressMode.isOperandAbsoluteAddress() || addressMode.isOperandRelativeAddress()|| code.length == 3) {
             label = String.format("$%04X", getOperandValue());
         }
-        else if (getLength() == 2) {
+        else if (code.length == 2) {
             label = String.format("$%02X",getOperandValue());
         }
         return internalFormat(label);
@@ -113,7 +108,7 @@ public class Instruction6502 implements Instruction {
     }
     
     String internalFormat(String value) {
-        if (getLength() == 1) {
+        if (code.length == 1) {
             return String.format(addressMode.getInstructionFormat(), getOpcodeMnemonic());
         }
         return String.format(addressMode.getInstructionFormat(), getOpcodeMnemonic(), value);

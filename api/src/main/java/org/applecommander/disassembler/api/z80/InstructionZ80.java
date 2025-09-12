@@ -43,11 +43,6 @@ public class InstructionZ80 implements Instruction {
     }
 
     @Override
-    public int getLength() {
-        return code.length;
-    }
-
-    @Override
     public byte[] getBytes() {
         return code;
     }

@@ -40,11 +40,6 @@ public class SkippedInstruction implements Instruction {
     }
 
     @Override
-    public int getLength() {
-        return 1;
-    }
-
-    @Override
     public byte[] getBytes() {
         return code;
     }
