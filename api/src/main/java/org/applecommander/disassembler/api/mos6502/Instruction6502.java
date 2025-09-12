@@ -16,16 +16,13 @@
  */
 package org.applecommander.disassembler.api.mos6502;
 
-import java.util.Optional;
-
 import org.applecommander.disassembler.api.Instruction;
 
 public class Instruction6502 implements Instruction {
-    private AddressMode6502 addressMode;
-    private Opcode6502 opcode;
-    private int address;
-    private byte[] code;
-    private String addressLabel;
+    private final AddressMode6502 addressMode;
+    private final Opcode6502 opcode;
+    private final int address;
+    private final byte[] code;
     private String operandLabel;
     
     Instruction6502(AddressMode6502 addressMode, Opcode6502 opcode, int address, byte[] code) {
@@ -43,16 +40,6 @@ public class Instruction6502 implements Instruction {
     @Override
     public byte[] getBytes() {
         return code;
-    }
-    
-    @Override
-    public Optional<String> getAddressLabel() {
-        return Optional.ofNullable(addressLabel);
-    }
-    
-    @Override
-    public void setAddressLabel(String label) {
-        this.addressLabel = label;
     }
     
     @Override

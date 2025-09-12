@@ -52,8 +52,8 @@ public class Disassembler {
         return new Builder(code);
     }
     
-    public List<Instruction> decode() {
-        List<Instruction> instructions = new ArrayList<>();
+    public List<Line> decode() {
+        List<Line> assembly = new ArrayList<>();
         Program program = new Program(code,startAddress);
 
         while (program.hasMore()) {
@@ -64,7 +64,7 @@ public class Disassembler {
             else {
                 instruction = instructionSet.decode(program);
             }
-            instructions.add(instruction);
+            assembly.add(new Line(instruction));
             
             boolean between = (instruction.getOperandValue() >= startAddress)
                            && (instruction.getOperandValue() < startAddress + code.length);
@@ -73,16 +73,17 @@ public class Disassembler {
             }
         }
 
-        for (Instruction instruction : instructions) {
+        for (Line line : assembly) {
+            Instruction instruction = line.getInstruction();
             if (labels.containsKey(instruction.getAddress())) {
-                instruction.setAddressLabel(labels.get(instruction.getAddress()));
+                line.setAddressLabel(labels.get(instruction.getAddress()));
             }
             if (instruction.operandHasAddress() && labels.containsKey(instruction.getOperandValue())) {
                 instruction.setOperandLabel(labels.get(instruction.getOperandValue()));
             }
         }
         
-        return instructions;
+        return assembly;
     }
     
     public static class Builder {
@@ -94,7 +95,7 @@ public class Disassembler {
             disassembler.code = code;
             disassembler.instructionSet = InstructionSet6502.for6502();
         }
-        public List<Instruction> decode() {
+        public List<Line> decode() {
             // merge in all selected sections
             for (String name : sections) {
                 Section section = ini.get(name);

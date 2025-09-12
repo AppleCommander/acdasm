@@ -16,17 +16,14 @@
  */
 package org.applecommander.disassembler.api.sweet16;
 
-import java.util.Optional;
-
 import org.applecommander.disassembler.api.Instruction;
 
 public class InstructionSWEET16 implements Instruction {
-    private AddressModeSWEET16 addressMode;
-    private OpcodeSWEET16 opcode;
-    private int address;
-    private int register;
-    private byte[] code;
-    private String addressLabel;
+    private final AddressModeSWEET16 addressMode;
+    private final OpcodeSWEET16 opcode;
+    private final int address;
+    private final int register;
+    private final byte[] code;
     private String operandLabel;
     
     InstructionSWEET16(AddressModeSWEET16 addressMode, OpcodeSWEET16 opcode, int register, int address, byte[] code) {
@@ -47,16 +44,6 @@ public class InstructionSWEET16 implements Instruction {
         return code;
     }
     
-    @Override
-    public Optional<String> getAddressLabel() {
-        return Optional.ofNullable(addressLabel);
-    }
-    
-    @Override
-    public void setAddressLabel(String label) {
-        this.addressLabel = label;
-    }
-
     @Override
     public String getOpcodeMnemonic() {
         return opcode.getMnemonic();
@@ -86,7 +73,7 @@ public class InstructionSWEET16 implements Instruction {
     
     @Override
     public void setOperandLabel(String label) {
-        this.addressLabel = label;
+        this.operandLabel = label;
     }
 
     @Override

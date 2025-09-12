@@ -18,13 +18,10 @@ package org.applecommander.disassembler.api.z80;
 
 import org.applecommander.disassembler.api.Instruction;
 
-import java.util.Optional;
-
 public class InstructionZ80 implements Instruction {
     private final String mnemonic;
-    private int address;
+    private final int address;
     private final byte[] code;
-    private String addressLabel;
     private String operandLabel;
     private final String operandFmt;
     private final int operandValue;
@@ -45,16 +42,6 @@ public class InstructionZ80 implements Instruction {
     @Override
     public byte[] getBytes() {
         return code;
-    }
-
-    @Override
-    public Optional<String> getAddressLabel() {
-        return Optional.ofNullable(addressLabel);
-    }
-
-    @Override
-    public void setAddressLabel(String label) {
-        this.addressLabel = label;
     }
 
     @Override

@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import org.applecommander.disassembler.api.Disassembler;
 import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
+import org.applecommander.disassembler.api.Line;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import org.applecommander.disassembler.api.switching6502.InstructionSet6502Switching;
@@ -55,7 +56,7 @@ public class Main implements Callable<Integer> {
     public void selectLabelEmitter(boolean flag) {
         emitter = flag ? this::emitWithLabels : this::emitRaw;
     }
-    private Consumer<Instruction> emitter = this::emitWithLabels;
+    private Consumer<Line> emitter = this::emitWithLabels;
     
     @Option(names = { "--labels" }, split = ",", defaultValue = "All", description = 
             "Select which library labels to load (default = 'All'; options are 'F800', 'Applesoft', 'ProDOS', 'DOS33', 'None').")
@@ -103,39 +104,41 @@ public class Main implements Callable<Integer> {
             labels.clear();
         }
         
-        List<Instruction> instructions = Disassembler.with(code)
+        List<Line> assembly = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
                 .use(cpuSelection.get())
                 .section(labels)
                 .decode();
 
-        instructions.forEach(emitter::accept);
+        assembly.forEach(emitter);
         
         return 0;
     }
     
-    public void emitWithLabels(Instruction instruction) {
+    public void emitWithLabels(Line line) {
+        Instruction instruction = line.getInstruction();
         System.out.printf("%04X- ", instruction.getAddress());
         
         byte[] code = instruction.getBytes();
         for (int i=0; i<3; i++) {
             if (i >= code.length) {
-                System.out.printf("   ");
+                System.out.print("   ");
             } else {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" %-10.10s ", instruction.getAddressLabel().orElse(""));
+        System.out.printf(" %-10.10s ", line.getAddressLabel().orElse(""));
         System.out.printf("%s\n", instruction.formatOperandWithLabel());
     }
-    public void emitRaw(Instruction instruction) {
+    public void emitRaw(Line line) {
+        Instruction instruction = line.getInstruction();
         System.out.printf("%04X- ", instruction.getAddress());
         
         byte[] code = instruction.getBytes();
         for (int i=0; i<3; i++) {
             if (i >= code.length) {
-                System.out.printf("   ");
+                System.out.print("   ");
             } else {
                 System.out.printf("%02X ", code[i]);
             }

@@ -16,13 +16,25 @@
  */
 package org.applecommander.disassembler.api;
 
-public interface Instruction {
-    int getAddress();
-    byte[] getBytes();
-    String getOpcodeMnemonic();
-    boolean operandHasAddress();
-    int getOperandValue();
-    void setOperandLabel(String label);
-    String formatOperandWithValue();
-    String formatOperandWithLabel();
+import java.util.Optional;
+
+public class Line {
+    private String addressLabel;
+    private final Instruction instruction;
+
+    public Line(Instruction instruction) {
+        this.instruction = instruction;
+    }
+
+    public Instruction getInstruction() {
+        return instruction;
+    }
+
+    public Optional<String> getAddressLabel() {
+        return Optional.ofNullable(this.addressLabel);
+    }
+
+    public void setAddressLabel(String label) {
+        this.addressLabel = label;
+    }
 }

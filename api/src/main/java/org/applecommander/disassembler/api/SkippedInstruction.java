@@ -16,8 +16,6 @@
  */
 package org.applecommander.disassembler.api;
 
-import java.util.Optional;
-
 public class SkippedInstruction implements Instruction {
     public static Instruction from(Program program) {
         int currentAddress = program.currentAddress();  // Need capture before read
@@ -25,10 +23,9 @@ public class SkippedInstruction implements Instruction {
         return new SkippedInstruction(currentAddress, code);
     }
     
-    private int address;
-    private byte[] code;
-    private String addressLabel;
-    
+    private final int address;
+    private final byte[] code;
+
     SkippedInstruction(int address, byte[] code) {
         this.address = address;
         this.code = code;
@@ -43,17 +40,7 @@ public class SkippedInstruction implements Instruction {
     public byte[] getBytes() {
         return code;
     }
-    
-    @Override
-    public Optional<String> getAddressLabel() {
-        return Optional.ofNullable(addressLabel);
-    }
-    
-    @Override
-    public void setAddressLabel(String label) {
-        this.addressLabel = label;
-    }
-    
+
     @Override
     public String getOpcodeMnemonic() {
         return "---";

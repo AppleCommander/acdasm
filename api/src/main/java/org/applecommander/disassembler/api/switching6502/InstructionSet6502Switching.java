@@ -18,7 +18,6 @@ package org.applecommander.disassembler.api.switching6502;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Function;
 
@@ -84,8 +83,8 @@ public class InstructionSet6502Switching implements InstructionSet {
             return new Directive(name, address);
         }
         
-        private String name;
-        private int address;
+        private final String name;
+        private final int address;
 
         private Directive(String name, int address) {
             this.name = name;
@@ -100,15 +99,6 @@ public class InstructionSet6502Switching implements InstructionSet {
         @Override
         public byte[] getBytes() {
             return new byte[0];
-        }
-        
-        @Override
-        public Optional<String> getAddressLabel() {
-            return Optional.empty();
-        }
-        
-        @Override
-        public void setAddressLabel(String label) {
         }
 
         @Override
