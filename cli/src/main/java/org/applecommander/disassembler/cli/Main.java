@@ -40,6 +40,9 @@ import picocli.CommandLine.Parameters;
          optionListHeading = "%nOptions:%n",
          description = "AC Disassembler.")
 public class Main implements Callable<Integer> {
+    @Option(names = "--debug", description = "Print stack traces")
+    public static boolean debug;
+
     @Option(names = { "-a", "--addr", "--origin" }, converter = IntegerTypeConverter.class,
             description = "Set start address for application.")
     private int startAddress = -1;
