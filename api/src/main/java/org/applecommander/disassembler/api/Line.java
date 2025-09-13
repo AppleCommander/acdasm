@@ -19,19 +19,25 @@ package org.applecommander.disassembler.api;
 import java.util.Optional;
 
 public class Line {
+    private final int address;
     private String addressLabel;
     private final Instruction instruction;
 
-    public Line(Instruction instruction) {
+    public Line(int address, Instruction instruction) {
+        this.address = address;
         this.instruction = instruction;
     }
 
-    public Instruction getInstruction() {
-        return instruction;
+    public int getAddress() {
+        return address;
     }
 
     public Optional<String> getAddressLabel() {
         return Optional.ofNullable(this.addressLabel);
+    }
+
+    public Instruction getInstruction() {
+        return instruction;
     }
 
     public void setAddressLabel(String label) {

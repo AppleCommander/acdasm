@@ -33,7 +33,7 @@ import org.ini4j.Profile.Section;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 
 public class Disassembler {
-    private static Ini ini = new Ini();
+    private static final Ini ini = new Ini();
     static {
         try (InputStream is = Disassembler.class.getResourceAsStream("/addresses.ini")) {
             ini.load(is);
@@ -57,6 +57,9 @@ public class Disassembler {
         Program program = new Program(code,startAddress);
 
         while (program.hasMore()) {
+            // Need to capture before program adjusts address
+            int currentAddress = program.currentAddress();
+
             Instruction instruction = null;
             if (program.currentOffset() < bytesToSkip) {
                 instruction = SkippedInstruction.from(program);
@@ -64,8 +67,8 @@ public class Disassembler {
             else {
                 instruction = instructionSet.decode(program);
             }
-            assembly.add(new Line(instruction));
-            
+            assembly.add(new Line(currentAddress, instruction));
+
             boolean between = (instruction.getOperandValue() >= startAddress)
                            && (instruction.getOperandValue() < startAddress + code.length);
             if (between && instruction.operandHasAddress()) {
@@ -75,8 +78,8 @@ public class Disassembler {
 
         for (Line line : assembly) {
             Instruction instruction = line.getInstruction();
-            if (labels.containsKey(instruction.getAddress())) {
-                line.setAddressLabel(labels.get(instruction.getAddress()));
+            if (labels.containsKey(line.getAddress())) {
+                line.setAddressLabel(labels.get(line.getAddress()));
             }
             if (instruction.operandHasAddress() && labels.containsKey(instruction.getOperandValue())) {
                 instruction.setOperandLabel(labels.get(instruction.getOperandValue()));
@@ -140,7 +143,7 @@ public class Disassembler {
         
         public Builder section(List<String> names) {
             if (names != null) {
-                names.forEach(this.sections::add);
+                this.sections.addAll(names);
             }
             return this;
         }

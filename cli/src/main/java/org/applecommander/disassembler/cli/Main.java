@@ -118,7 +118,7 @@ public class Main implements Callable<Integer> {
     
     public void emitWithLabels(Line line) {
         Instruction instruction = line.getInstruction();
-        System.out.printf("%04X- ", instruction.getAddress());
+        System.out.printf("%04X- ", line.getAddress());
         
         byte[] code = instruction.getBytes();
         for (int i=0; i<3; i++) {
@@ -133,7 +133,7 @@ public class Main implements Callable<Integer> {
     }
     public void emitRaw(Line line) {
         Instruction instruction = line.getInstruction();
-        System.out.printf("%04X- ", instruction.getAddress());
+        System.out.printf("%04X- ", line.getAddress());
         
         byte[] code = instruction.getBytes();
         for (int i=0; i<3; i++) {

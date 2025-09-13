@@ -17,7 +17,6 @@
 package org.applecommander.disassembler.api;
 
 public interface Instruction {
-    int getAddress();
     byte[] getBytes();
     String getOpcodeMnemonic();
     boolean operandHasAddress();

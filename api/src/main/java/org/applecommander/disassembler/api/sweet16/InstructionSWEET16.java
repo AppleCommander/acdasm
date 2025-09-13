@@ -35,11 +35,6 @@ public class InstructionSWEET16 implements Instruction {
     }
 
     @Override
-    public int getAddress() {
-        return address;
-    }
-
-    @Override
     public byte[] getBytes() {
         return code;
     }

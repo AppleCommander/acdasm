@@ -18,22 +18,14 @@ package org.applecommander.disassembler.api;
 
 public class SkippedInstruction implements Instruction {
     public static Instruction from(Program program) {
-        int currentAddress = program.currentAddress();  // Need capture before read
         byte[] code = program.read(1);
-        return new SkippedInstruction(currentAddress, code);
+        return new SkippedInstruction(code);
     }
     
-    private final int address;
     private final byte[] code;
 
-    SkippedInstruction(int address, byte[] code) {
-        this.address = address;
+    SkippedInstruction(byte[] code) {
         this.code = code;
-    }
-
-    @Override
-    public int getAddress() {
-        return address;
     }
 
     @Override

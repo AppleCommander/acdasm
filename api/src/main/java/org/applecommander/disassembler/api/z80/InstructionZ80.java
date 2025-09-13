@@ -20,23 +20,16 @@ import org.applecommander.disassembler.api.Instruction;
 
 public class InstructionZ80 implements Instruction {
     private final String mnemonic;
-    private final int address;
     private final byte[] code;
     private String operandLabel;
     private final String operandFmt;
     private final int operandValue;
 
     public InstructionZ80(int address, String mnemonic, String operandFmt, int operandValue, byte[] code) {
-        this.address = address;
         this.mnemonic = mnemonic;
         this.operandFmt = operandFmt;
         this.operandValue = operandValue;
         this.code = code;
-    }
-
-    @Override
-    public int getAddress() {
-        return address;
     }
 
     @Override

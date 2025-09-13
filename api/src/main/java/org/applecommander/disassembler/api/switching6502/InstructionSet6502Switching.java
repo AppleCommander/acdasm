@@ -32,10 +32,10 @@ public class InstructionSet6502Switching implements InstructionSet {
         return new InstructionSet6502Switching(InstructionSet6502.for6502(), InstructionSetSWEET16.forSWEET16());
     }
     
-    private InstructionSet6502 mos6502;
-    private InstructionSetSWEET16 sweet16;
+    private final InstructionSet6502 mos6502;
+    private final InstructionSetSWEET16 sweet16;
     private Function<Program,Instruction> strategy = this::decode6502;
-    private Queue<Instruction> pending = new LinkedList<>();
+    private final Queue<Instruction> pending = new LinkedList<>();
     
     private InstructionSet6502Switching(InstructionSet6502 mos6502, InstructionSetSWEET16 sweet16) {
         this.mos6502 = mos6502;
@@ -89,11 +89,6 @@ public class InstructionSet6502Switching implements InstructionSet {
         private Directive(String name, int address) {
             this.name = name;
             this.address = address;
-        }
-        
-        @Override
-        public int getAddress() {
-            return address;
         }
 
         @Override
