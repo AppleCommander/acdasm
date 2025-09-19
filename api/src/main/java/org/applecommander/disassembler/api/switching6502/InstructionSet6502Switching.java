@@ -48,6 +48,11 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
+    public int suggestedBytesPerInstruction() {
+        return Math.max(mos6502.suggestedBytesPerInstruction(), sweet16.suggestedBytesPerInstruction());
+    }
+
+    @Override
     public Instruction.Builder decode(Program program) {
         if (!pending.isEmpty()) {
             return pending.remove();

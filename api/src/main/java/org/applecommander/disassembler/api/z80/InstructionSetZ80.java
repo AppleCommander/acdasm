@@ -39,6 +39,11 @@ public class InstructionSetZ80 implements InstructionSet {
     }
 
     @Override
+    public int suggestedBytesPerInstruction() {
+        return 5;
+    }
+
+    @Override
     public Instruction.Builder decode(Program program) {
         int addr = program.currentAddress();
         Instruction.Builder builder = Instruction.at(addr);

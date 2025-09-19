@@ -37,6 +37,11 @@ public class InstructionSetSWEET16 implements InstructionSet {
     }
 
     @Override
+    public int suggestedBytesPerInstruction() {
+        return 3;
+    }
+
+    @Override
     public Instruction.Builder decode(Program program) {
         int op = Byte.toUnsignedInt(program.peek());
         int low = op & 0x0f;

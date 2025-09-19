@@ -120,7 +120,7 @@ public class Main implements Callable<Integer> {
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
-        for (int i=0; i<3; i++) {
+        for (int i=0; i<cpuSelection.instructionSet.suggestedBytesPerInstruction(); i++) {
             if (i >= code.length) {
                 System.out.print("   ");
             } else {
@@ -136,7 +136,7 @@ public class Main implements Callable<Integer> {
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
-        for (int i=0; i<3; i++) {
+        for (int i=0; i<cpuSelection.instructionSet.suggestedBytesPerInstruction(); i++) {
             if (i >= code.length) {
                 System.out.print("   ");
             } else {
