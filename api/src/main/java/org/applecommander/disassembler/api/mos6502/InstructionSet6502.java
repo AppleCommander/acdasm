@@ -49,6 +49,11 @@ public class InstructionSet6502 implements InstructionSet {
     }
 
     @Override
+    public List<String> defaultLibraryLabels() {
+        return List.of("All");
+    }
+
+    @Override
     public int suggestedBytesPerInstruction() {
         return 3;
     }

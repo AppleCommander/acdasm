@@ -20,6 +20,7 @@ import java.util.List;
 
 public interface InstructionSet {
     int defaultStartAddress();
+    List<String> defaultLibraryLabels();
     Instruction.Builder decode(Program program);
     int suggestedBytesPerInstruction();
     List<OpcodeTable> opcodeTables();

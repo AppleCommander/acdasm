@@ -39,6 +39,12 @@ public class InstructionSetZ80 implements InstructionSet {
     }
 
     @Override
+    public List<String> defaultLibraryLabels() {
+        // TBD. No explicit labels defined.
+        return List.of();
+    }
+
+    @Override
     public int suggestedBytesPerInstruction() {
         return 5;
     }

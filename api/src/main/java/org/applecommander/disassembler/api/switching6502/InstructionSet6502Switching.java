@@ -48,6 +48,11 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
+    public List<String> defaultLibraryLabels() {
+        return List.of("All");
+    }
+
+    @Override
     public int suggestedBytesPerInstruction() {
         return Math.max(mos6502.suggestedBytesPerInstruction(), sweet16.suggestedBytesPerInstruction());
     }

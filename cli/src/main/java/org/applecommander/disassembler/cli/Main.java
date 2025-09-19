@@ -18,9 +18,7 @@ package org.applecommander.disassembler.cli;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -54,15 +52,17 @@ public class Main implements Callable<Integer> {
             description = "Skip offset bytes into binary before disassembling.")
     private int offset;
     
-    @Option(names = { "--hide-labels" }, negatable = true, description = "Hide labels.")
+    @Option(names = { "--labels" }, negatable = true, description = "Show or hide labels.")
     public void selectLabelEmitter(boolean flag) {
         emitter = flag ? this::emitWithLabels : this::emitRaw;
     }
     private Consumer<Instruction> emitter = this::emitWithLabels;
     
-    @Option(names = { "--labels" }, split = ",", defaultValue = "All", description = 
-            "Select which library labels to load (default = 'All'; options are 'F800', 'Applesoft', 'ProDOS', 'DOS33', 'None').")
-    private List<String> sections;
+    @Option(names = { "--library" }, split = ",", paramLabel = "<library>", description =
+            "Select which library labels to load. Use 'All' to select all. Each CPU has a default set " +
+            "(most are 'All' except Z80).  Options are: 'F800', 'Applesoft', 'ProDOS', 'DOS', 'DISKII'. " +
+            "'None' may also be used to turn library labels off.")
+    private List<String> libraries;
 
     @ArgGroup(heading = "%nCPU Selection:%n")
     private final CpuSelection cpuSelection = new CpuSelection();
@@ -100,20 +100,25 @@ public class Main implements Callable<Integer> {
         }
 
         final byte[] code = Files.readAllBytes(file);
-        
-        if (sections.contains("All")) {
-            sections.clear();
-            sections.addAll(Disassembler.sections());
+
+        // CPU library labels defaults:
+        if (libraries == null) {
+            libraries = cpuSelection.instructionSet.defaultLibraryLabels();
         }
-        else if (sections.contains("None")) {
-            sections.clear();
+        // Remap the keywords:  (note: Most libraries will be defined with "List.of('All|None')" which is immutable)
+        if (libraries.contains("All")) {
+            libraries = new ArrayList<>();
+            libraries.addAll(Disassembler.sections());
         }
-        
+        else if (libraries.contains("None")) {
+            libraries = new ArrayList<>();
+        }
+
         List<Instruction> assembly = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
                 .use(cpuSelection.get())
-                .section(sections)
+                .section(libraries)
                 .decode(labels);
 
         assembly.forEach(emitter);
@@ -155,7 +160,7 @@ public class Main implements Callable<Integer> {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf("%-5.5s ", instruction.mnemonic());
+        System.out.printf(" %-5.5s ", instruction.mnemonic());
         System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
                 .collect(Collectors.joining(",")));
     }
