@@ -46,13 +46,12 @@ public class Disassembler {
     private int bytesToSkip;
     private byte[] code;
     private InstructionSet instructionSet;
-    private final Map<Integer,String> labels = new HashMap<>();
 
     public static Builder with(byte[] code) {
         return new Builder(code);
     }
     
-    public List<Instruction> decode() {
+    private List<Instruction> decode(Map<Integer,String> labels) {
         List<Instruction.Builder> assembly = new ArrayList<>();
         Program program = new Program(code,startAddress);
 
@@ -76,27 +75,12 @@ public class Disassembler {
             });
         }
 
-        // Apply all applicable labels and convert from builder to Instructions
-        return assembly.stream().map(builder -> {
-            // Check if the instruction should have a label:
-            if (labels.containsKey(builder.address())) {
-                builder.addressLabel(labels.get(builder.address()));
-            }
-            // Check if the instruction references an address that should have a label:
-            builder.addressRef().ifPresent(opBuilder -> {
-                opBuilder.address().ifPresent(address -> {
-                    if (labels.containsKey(address)) {
-                        opBuilder.addressLabel(labels.get(address));
-                    }
-                });
-            });
-            return builder.get();
-        }).toList();
+        return assembly.stream().map(Instruction.Builder::get).toList();
     }
     
     public static class Builder {
-        private Set<String> sections = new HashSet<>();
-        private Disassembler disassembler = new Disassembler();
+        private final Set<String> sections = new HashSet<>();
+        private final Disassembler disassembler = new Disassembler();
         
         public Builder(byte[] code) {
             disassembler.startAddress = 0x300;
@@ -104,6 +88,10 @@ public class Disassembler {
             disassembler.instructionSet = InstructionSet6502.for6502();
         }
         public List<Instruction> decode() {
+            return this.decode(new HashMap<>());
+        }
+        public List<Instruction> decode(Map<Integer,String> labels) {
+            assert labels != null;
             // merge in all selected sections
             for (String name : sections) {
                 Section section = ini.get(name);
@@ -112,11 +100,11 @@ public class Disassembler {
                 }
                 for (Map.Entry<String,String> entry : section.entrySet()) {
                     Optional<Integer> address = convert(entry.getValue());
-                    address.ifPresent(integer -> disassembler.labels.putIfAbsent(integer, entry.getKey()));
+                    address.ifPresent(integer -> labels.putIfAbsent(integer, entry.getKey()));
                 }
             }
             
-            return disassembler.decode();
+            return disassembler.decode(labels);
         }
         
         public Builder startingAddress(int address) {

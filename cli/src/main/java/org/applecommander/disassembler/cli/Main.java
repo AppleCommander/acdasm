@@ -18,7 +18,9 @@ package org.applecommander.disassembler.cli;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -60,13 +62,16 @@ public class Main implements Callable<Integer> {
     
     @Option(names = { "--labels" }, split = ",", defaultValue = "All", description = 
             "Select which library labels to load (default = 'All'; options are 'F800', 'Applesoft', 'ProDOS', 'DOS33', 'None').")
-    private List<String> labels;
+    private List<String> sections;
 
     @ArgGroup(heading = "%nCPU Selection:%n")
-    private CpuSelection cpuSelection = new CpuSelection();
+    private final CpuSelection cpuSelection = new CpuSelection();
     
     @Parameters(arity = "1", description = "File to disassemble.")
     private Path file;
+
+    // Locals
+    private final Map<Integer,String> labels = new HashMap<>();
     
     public static void main(String[] args) {
         int exitCode = new CommandLine(new Main())
@@ -96,20 +101,20 @@ public class Main implements Callable<Integer> {
 
         final byte[] code = Files.readAllBytes(file);
         
-        if (labels.contains("All")) {
-            labels.clear();
-            labels.addAll(Disassembler.sections());
+        if (sections.contains("All")) {
+            sections.clear();
+            sections.addAll(Disassembler.sections());
         }
-        else if (labels.contains("None")) {
-            labels.clear();
+        else if (sections.contains("None")) {
+            sections.clear();
         }
         
         List<Instruction> assembly = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
                 .use(cpuSelection.get())
-                .section(labels)
-                .decode();
+                .section(sections)
+                .decode(labels);
 
         assembly.forEach(emitter);
         
@@ -127,10 +132,17 @@ public class Main implements Callable<Integer> {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" %-10.10s ", instruction.addressLabel().orElse(""));
+        System.out.printf(" %-10.10s ", labels.getOrDefault(instruction.address(), ""));
         System.out.printf("%-5.5s ", instruction.mnemonic());
-        System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
-                .collect(Collectors.joining(",")));
+        System.out.printf("%s\n", instruction.operands().stream().map(operand -> {
+                if (operand.address().isPresent() && labels.containsKey(operand.address().get())) {
+                    return operand.format(labels.get(operand.address().get()));
+                }
+                else {
+                    return operand.format();
+                }
+            })
+            .collect(Collectors.joining(",")));
     }
     public void emitRaw(Instruction instruction) {
         System.out.printf("%04X- ", instruction.address());

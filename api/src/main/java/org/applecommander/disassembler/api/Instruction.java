@@ -20,12 +20,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public record Instruction(int address, Optional<String> addressLabel, byte[] code,
-                          String mnemonic, List<Operand> operands) {
+public record Instruction(int address, byte[] code, String mnemonic, List<Operand> operands) {
+    public Optional<Operand> addressRef() {
+        for (Operand operand : operands) {
+            if (operand.address().isPresent()) {
+                return Optional.of(operand);
+            }
+        }
+        return Optional.empty();
+    }
 
-    public record Operand(String opFmt, String value, Optional<Integer> address, Optional<String> addressLabel) {
+
+    public record Operand(String opFmt, String value, Optional<Integer> address) {
         public String format() {
-            return String.format(opFmt, addressLabel.orElse(value));
+            return String.format(opFmt, value);
+        }
+        public String format(String label) {
+            return String.format(opFmt, label);
         }
     }
 
@@ -34,7 +45,6 @@ public record Instruction(int address, Optional<String> addressLabel, byte[] cod
     }
     public static class Builder {
         private final int address;
-        private String addressLabel = null;
         private byte[] code = new byte[0];
         private String mnemonic = "";
         private final List<OpBuilder> opBuilders = new ArrayList<>();
@@ -48,10 +58,6 @@ public record Instruction(int address, Optional<String> addressLabel, byte[] cod
         public Builder code(byte[] code) {
             assert code != null;
             this.code = code;
-            return this;
-        }
-        public Builder addressLabel(String addressLabel) {
-            this.addressLabel = addressLabel;
             return this;
         }
         public Builder mnemonic(String mnemonic) {
@@ -80,7 +86,7 @@ public record Instruction(int address, Optional<String> addressLabel, byte[] cod
         }
         public Instruction get() {
             List<Operand> operands = opBuilders.stream().map(OpBuilder::get).toList();
-            return new Instruction(address, Optional.ofNullable(addressLabel), code, mnemonic, operands);
+            return new Instruction(address, code, mnemonic, operands);
         }
     }
 
@@ -88,7 +94,6 @@ public record Instruction(int address, Optional<String> addressLabel, byte[] cod
         private final String opFmt;
         private String value;
         private Integer address;
-        private String addressLabel;
 
         private OpBuilder(String opFmt) {
             this.opFmt = opFmt;
@@ -105,12 +110,8 @@ public record Instruction(int address, Optional<String> addressLabel, byte[] cod
         public Optional<Integer> address() {
             return Optional.ofNullable(address);
         }
-        public OpBuilder addressLabel(String label) {
-            this.addressLabel = label;
-            return this;
-        }
         public Operand get() {
-            return new Operand(opFmt, value, address(), Optional.ofNullable(addressLabel));
+            return new Operand(opFmt, value, Optional.ofNullable(address));
         }
     }
 }
