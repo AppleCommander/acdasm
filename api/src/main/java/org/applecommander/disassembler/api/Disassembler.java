@@ -46,47 +46,52 @@ public class Disassembler {
     private int bytesToSkip;
     private byte[] code;
     private InstructionSet instructionSet;
-    private Map<Integer,String> labels = new HashMap<>();
+    private final Map<Integer,String> labels = new HashMap<>();
 
     public static Builder with(byte[] code) {
         return new Builder(code);
     }
     
-    public List<Line> decode() {
-        List<Line> assembly = new ArrayList<>();
+    public List<Instruction> decode() {
+        List<Instruction.Builder> assembly = new ArrayList<>();
         Program program = new Program(code,startAddress);
 
+        // 1st pass: Gather all the instruction builders and identify all target addresses
         while (program.hasMore()) {
-            // Need to capture before program adjusts address
-            int currentAddress = program.currentAddress();
-
-            Instruction instruction = null;
+            Instruction.Builder builder = null;
             if (program.currentOffset() < bytesToSkip) {
-                instruction = SkippedInstruction.from(program);
+                builder = Instruction.at(program.currentAddress())
+                        .mnemonic("---")
+                        .code(program.read(1));
             }
             else {
-                instruction = instructionSet.decode(program);
+                builder = instructionSet.decode(program);
             }
-            assembly.add(new Line(currentAddress, instruction));
+            assembly.add(builder);
 
-            boolean between = (instruction.getOperandValue() >= startAddress)
-                           && (instruction.getOperandValue() < startAddress + code.length);
-            if (between && instruction.operandHasAddress()) {
-                labels.computeIfAbsent(instruction.getOperandValue(), addr -> String.format("L%04X", addr));
-            }
+            builder.addressRef().flatMap(Instruction.OpBuilder::address).ifPresent(address -> {
+                if ((address >= startAddress) && (address < startAddress + code.length)) {
+                    labels.computeIfAbsent(address, addr -> String.format("L%04X", addr));
+                }
+            });
         }
 
-        for (Line line : assembly) {
-            Instruction instruction = line.getInstruction();
-            if (labels.containsKey(line.getAddress())) {
-                line.setAddressLabel(labels.get(line.getAddress()));
+        // Apply all applicable labels and convert from builder to Instructions
+        return assembly.stream().map(builder -> {
+            // Check if the instruction should have a label:
+            if (labels.containsKey(builder.address())) {
+                builder.addressLabel(labels.get(builder.address()));
             }
-            if (instruction.operandHasAddress() && labels.containsKey(instruction.getOperandValue())) {
-                instruction.setOperandLabel(labels.get(instruction.getOperandValue()));
-            }
-        }
-        
-        return assembly;
+            // Check if the instruction references an address that should have a label:
+            builder.addressRef().ifPresent(opBuilder -> {
+                opBuilder.address().ifPresent(address -> {
+                    if (labels.containsKey(address)) {
+                        opBuilder.addressLabel(labels.get(address));
+                    }
+                });
+            });
+            return builder.get();
+        }).toList();
     }
     
     public static class Builder {
@@ -98,7 +103,7 @@ public class Disassembler {
             disassembler.code = code;
             disassembler.instructionSet = InstructionSet6502.for6502();
         }
-        public List<Line> decode() {
+        public List<Instruction> decode() {
             // merge in all selected sections
             for (String name : sections) {
                 Section section = ini.get(name);
@@ -107,9 +112,7 @@ public class Disassembler {
                 }
                 for (Map.Entry<String,String> entry : section.entrySet()) {
                     Optional<Integer> address = convert(entry.getValue());
-                    if (address.isPresent()) {
-                        disassembler.labels.putIfAbsent(address.get(), entry.getKey());
-                    }
+                    address.ifPresent(integer -> disassembler.labels.putIfAbsent(integer, entry.getKey()));
                 }
             }
             

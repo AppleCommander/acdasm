@@ -21,11 +21,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.applecommander.disassembler.api.Disassembler;
 import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
-import org.applecommander.disassembler.api.Line;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import org.applecommander.disassembler.api.switching6502.InstructionSet6502Switching;
@@ -56,7 +56,7 @@ public class Main implements Callable<Integer> {
     public void selectLabelEmitter(boolean flag) {
         emitter = flag ? this::emitWithLabels : this::emitRaw;
     }
-    private Consumer<Line> emitter = this::emitWithLabels;
+    private Consumer<Instruction> emitter = this::emitWithLabels;
     
     @Option(names = { "--labels" }, split = ",", defaultValue = "All", description = 
             "Select which library labels to load (default = 'All'; options are 'F800', 'Applesoft', 'ProDOS', 'DOS33', 'None').")
@@ -104,7 +104,7 @@ public class Main implements Callable<Integer> {
             labels.clear();
         }
         
-        List<Line> assembly = Disassembler.with(code)
+        List<Instruction> assembly = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
                 .use(cpuSelection.get())
@@ -116,11 +116,10 @@ public class Main implements Callable<Integer> {
         return 0;
     }
     
-    public void emitWithLabels(Line line) {
-        Instruction instruction = line.getInstruction();
-        System.out.printf("%04X- ", line.getAddress());
+    public void emitWithLabels(Instruction instruction) {
+        System.out.printf("%04X- ", instruction.address());
         
-        byte[] code = instruction.getBytes();
+        byte[] code = instruction.code();
         for (int i=0; i<3; i++) {
             if (i >= code.length) {
                 System.out.print("   ");
@@ -128,14 +127,15 @@ public class Main implements Callable<Integer> {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" %-10.10s ", line.getAddressLabel().orElse(""));
-        System.out.printf("%s\n", instruction.formatOperandWithLabel());
+        System.out.printf(" %-10.10s ", instruction.addressLabel().orElse(""));
+        System.out.printf("%-5.5s ", instruction.mnemonic());
+        System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
+                .collect(Collectors.joining(",")));
     }
-    public void emitRaw(Line line) {
-        Instruction instruction = line.getInstruction();
-        System.out.printf("%04X- ", line.getAddress());
+    public void emitRaw(Instruction instruction) {
+        System.out.printf("%04X- ", instruction.address());
         
-        byte[] code = instruction.getBytes();
+        byte[] code = instruction.code();
         for (int i=0; i<3; i++) {
             if (i >= code.length) {
                 System.out.print("   ");
@@ -143,7 +143,9 @@ public class Main implements Callable<Integer> {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" %s\n", instruction.formatOperandWithValue());
+        System.out.printf("%-5.5s ", instruction.mnemonic());
+        System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
+                .collect(Collectors.joining(",")));
     }
     
     private static class CpuSelection {

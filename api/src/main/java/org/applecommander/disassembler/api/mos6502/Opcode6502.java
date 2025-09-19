@@ -39,19 +39,19 @@ public enum Opcode6502 {
     // invalid
     ZZZ("???");
     
-    private String mnemonic;
+    private final String mnemonic;
 
-    private Opcode6502() {
+    Opcode6502() {
         this.mnemonic = name();
     }
-    private Opcode6502(String mnemonic) {
+    Opcode6502(String mnemonic) {
         this.mnemonic = mnemonic;
     }
     public String getMnemonic() {
         return mnemonic;
     }
 
-    public static Opcode6502[] MOS6502 = {
+    public static final Opcode6502[] MOS6502 = {
             // See: https://www.masswerk.at/6502/6502_instruction_set.html
             /*         -0   -1   -2   -3   -4   -5   -6   -7   -8   -9  -A    -B   -C   -D   -E   -F */
             /* 0- */  BRK, ORA, ZZZ, ZZZ, ZZZ, ORA, ASL, ZZZ, PHP, ORA, ASL, ZZZ, ZZZ, ORA, ASL, ZZZ,
@@ -71,7 +71,7 @@ public enum Opcode6502 {
             /* E- */  CPX, SBC, ZZZ, ZZZ, CPX, SBC, INC, ZZZ, INX, SBC, NOP, ZZZ, CPX, SBC, INC, ZZZ,
             /* F- */  BEQ, SBC, ZZZ, ZZZ, ZZZ, SBC, INC, ZZZ, SED, SBC, ZZZ, ZZZ, ZZZ, SBC, INC, ZZZ
         };
-    public static Opcode6502[] MOS6502_WITH_ILLEGAL = {
+    public static final Opcode6502[] MOS6502_WITH_ILLEGAL = {
             // See: https://www.masswerk.at/6502/6502_instruction_set.html (and show illegal opcodes)
             /*         -0   -1   -2   -3   -4   -5   -6   -7   -8   -9  -A     -B   -C   -D   -E   -F */
             /* 0- */  BRK, ORA, JAM, SLO, NOP, ORA, ASL, SLO, PHP, ORA, ASL,  ANC, NOP, ORA, ASL, SLO,
@@ -91,7 +91,7 @@ public enum Opcode6502 {
             /* E- */  CPX, SBC, NOP, ISC, CPX, SBC, INC, ISC, INX, SBC, NOP, USBC, CPX, SBC, INC, ISC,
             /* F- */  BEQ, SBC, JAM, ISC, NOP, SBC, INC, ISC, SED, SBC, NOP,  ISC, NOP, SBC, INC, ISC
         };
-    public static Opcode6502[] WDC65C02 = {
+    public static final Opcode6502[] WDC65C02 = {
             // See: http://6502.org/tutorials/65c02opcodes.html
             /*         -0   -1   -2   -3   -4   -5   -6   -7   -8   -9  -A    -B   -C   -D   -E   -F */
             /* 0- */  BRK, ORA, ZZZ, ZZZ, TSB, ORA, ASL, ZZZ, PHP, ORA, ASL, ZZZ, TSB, ORA, ASL, ZZZ,
@@ -100,8 +100,8 @@ public enum Opcode6502 {
             /* 3- */  BMI, AND, AND, ZZZ, BIT, AND, ROL, ZZZ, SEC, AND, DEC, ZZZ, BIT, AND, ROL, ZZZ,
             /* 4- */  RTI, EOR, ZZZ, ZZZ, ZZZ, EOR, LSR, ZZZ, PHA, EOR, LSR, ZZZ, JMP, EOR, LSR, ZZZ,
             /* 5- */  BVC, EOR, EOR, ZZZ, ZZZ, EOR, LSR, ZZZ, CLI, EOR, PHY, ZZZ, ZZZ, EOR, LSR, ZZZ,
-            /* 6- */  RTS, ADC, ZZZ, STZ, ZZZ, ADC, ROR, ZZZ, PLA, ADC, ROR, ZZZ, JMP, ADC, ROR, ZZZ,
-            /* 7- */  BVS, ADC, ADC, STZ, ZZZ, ADC, ROR, ZZZ, SEI, ADC, PLY, ZZZ, JMP, ADC, ROR, ZZZ,
+            /* 6- */  RTS, ADC, ZZZ, ZZZ, STZ, ADC, ROR, ZZZ, PLA, ADC, ROR, ZZZ, JMP, ADC, ROR, ZZZ,
+            /* 7- */  BVS, ADC, ADC, ZZZ, STZ, ADC, ROR, ZZZ, SEI, ADC, PLY, ZZZ, JMP, ADC, ROR, ZZZ,
             /* 8- */  BRA, STA, ZZZ, ZZZ, STY, STA, STX, ZZZ, DEY, BIT, TXA, ZZZ, STY, STA, STX, ZZZ,
             /* 9- */  BCC, STA, STA, ZZZ, STY, STA, STX, ZZZ, TYA, STA, TXS, ZZZ, STZ, STA, STZ, ZZZ,
             /* A- */  LDY, LDA, LDX, ZZZ, LDY, LDA, LDX, ZZZ, TAY, LDA, TAX, ZZZ, LDY, LDA, LDX, ZZZ,
@@ -111,5 +111,4 @@ public enum Opcode6502 {
             /* E- */  CPX, SBC, ZZZ, ZZZ, CPX, SBC, INC, ZZZ, INX, SBC, NOP, ZZZ, CPX, SBC, INC, ZZZ,
             /* F- */  BEQ, SBC, SBC, ZZZ, ZZZ, SBC, INC, ZZZ, SED, SBC, PLX, ZZZ, ZZZ, SBC, INC, ZZZ
         };
-
 }

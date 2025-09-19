@@ -39,8 +39,9 @@ public class InstructionSetZ80 implements InstructionSet {
     }
 
     @Override
-    public Instruction decode(Program program) {
+    public Instruction.Builder decode(Program program) {
         int addr = program.currentAddress();
+        Instruction.Builder builder = Instruction.at(addr);
 
         int length = 1;
         int b = Byte.toUnsignedInt(program.peek());
@@ -66,43 +67,61 @@ public class InstructionSetZ80 implements InstructionSet {
             }
             length++;
         }
-        // The paramaters (add'l bytes)
-        String operandFmt = op.fmt;
+        builder.mnemonic(op.mnemonic);
+        // Operands - figure out extra bytes
         int operandValue = 0;
         if ((op.flags.contains(DATLO) && op.flags.contains(DATHI))
                 || (op.flags.contains(ADDLO) && op.flags.contains(ADDHI))) {
             int b1 = Byte.toUnsignedInt(program.peek(length));
-            int b2 = Byte.toUnsignedInt(program.peek(length+1));
+            int b2 = Byte.toUnsignedInt(program.peek(length + 1));
             operandValue = b1 | b2 << 8;
-            String param = op.flags.contains(DATLO) ? "data" : "add";
-            operandFmt = operandFmt.replace(param, String.format("%04XH", b1 | b2 << 8));
             length += 2;
         }
         if (op.flags.contains(DATA) || op.flags.contains(PORT)) {
             operandValue = Byte.toUnsignedInt(program.peek(length));
-            String param = op.flags.contains(DATA) ? "data" : "port";
-            operandFmt = operandFmt.replace(param, String.format("%02XH", operandValue));
             length += 1;
         }
         if (op.flags.contains(OFFSET)) {
             operandValue = addr + Byte.toUnsignedInt(program.peek(length));
-            operandFmt = operandFmt.replace("offset", String.format("%04XH", operandValue));
             length += 1;
         }
-        // Handle IX / IY
-        if (ix || iy) {
-            String reg = ix ? "IX" : "IY";
-            if (operandFmt.contains("(HL)")) {
-                int displacement = Byte.toUnsignedInt(program.peek(length));
-                operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
-                length++;
+        // Operands - add into builder
+        for (String operandFmt : op.fmts) {
+            // Handle IX / IY
+            if (ix || iy) {
+                String reg = ix ? "IX" : "IY";
+                if (operandFmt.contains("(HL)")) {
+                    int displacement = Byte.toUnsignedInt(program.peek(length));
+                    operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
+                    length++;
+                } else if (operandFmt.contains("HL")) {
+                    operandFmt = operandFmt.replace("HL", reg);
+                }
             }
-            else if (operandFmt.contains("HL")) {
-                operandFmt = operandFmt.replace("HL", reg);
+            // Setup the operand
+            if (operandFmt.contains("data") && op.flags.contains(DATLO)) {
+                builder.opValue(operandFmt.replace("data", "%04XH"), operandValue);
+            }
+            else if (operandFmt.contains("add")) {
+                builder.opAddress(operandFmt.replace("add", "%s"), "%04XH", operandValue);
+            }
+            else if (operandFmt.contains("port")) {
+                builder.opValue(operandFmt.replace("port", "%02XH"), operandValue);
+            }
+            else if (operandFmt.contains("data") && op.flags.contains(DATA)) {
+                builder.opValue(operandFmt.replace("data", "%02XH"), operandValue);
+            }
+            else if (operandFmt.contains("offset")) {
+                builder.opAddress(operandFmt.replace("offset", "%s"), "%04XH", operandValue);
+            }
+            else {
+                builder.opValue(operandFmt);
             }
         }
         //
-        return new InstructionZ80(addr, op.mnemonic, operandFmt, operandValue, program.read(length));
+        //return new InstructionZ80(addr, op.mnemonic, operandFmt, operandValue, program.read(length));
+        builder.code(program.read(length));
+        return builder;
     }
 
     @Override
@@ -134,7 +153,7 @@ public class InstructionSetZ80 implements InstructionSet {
             if (opcode == null) {
                 return "-";
             }
-            String fmt = opcode.fmt
+            String fmt = String.join(",",opcode.fmts)
                     .replace("rp","rr")         // register pair
                     .replace("data", "VALUE")   // both 8-bit and 16-bit values
                     .replace("ddd", "r")        // register
@@ -148,9 +167,9 @@ public class InstructionSetZ80 implements InstructionSet {
         }
     }
 
-    record Opcode(int opcode, String mnemonic, String fmt, Set<Flag> flags) {
-        public Opcode(int opcode, String mnemonic, String fmt, Flag... flags) {
-            this(opcode, mnemonic, fmt, Set.of(flags));
+    record Opcode(int opcode, String mnemonic, String[] fmts, Set<Flag> flags) {
+        public Opcode(int opcode, String mnemonic, String fmts, Flag... flags) {
+            this(opcode, mnemonic, fmts.split(","), Set.of(flags));
         }
     }
 

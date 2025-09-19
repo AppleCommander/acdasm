@@ -17,37 +17,37 @@
 package org.applecommander.disassembler.api.mos6502;
 
 public enum AddressMode6502 {
-    // FIXME the indirect and ZP are mixed a bit (zp) vs (addr) vs (zp,x) vs (addr,x).
-    ACC( 1, "%s"),
-    ABS( 3, "%s %s"),
-    ABSX(3, "%s %s,X"),
-    ABSY(3, "%s %s,Y"),
-    IMM( 2, "%s #%s"),
-    IMP( 1, "%s"),
-    IND( 2, "%s (%s)"),
-    INDX(2, "%s (%s,X)"),
-    INDY(2, "%s (%s),Y"),
-    REL( 2, "%s %s"),
-    ZP(  2, "%s %s"),
-    ZPX( 2, "%s %s,X"),
-    ZPY( 2, "%s %s,Y");
+    ACC(     1),
+    ABS(     3),
+    ABSX(    3),
+    ABSY(    3),
+    IMM(     2),
+    IMP(     1),
+    INDABS(  3),
+    INDABSX( 3),
+    INDZP(   2),
+    INDZPX(  2),
+    INDZPY(  2),
+    REL(     2),
+    ZP(      2),
+    ZPX(     2),
+    ZPY(     2),
+    // For 65C02 extra NOPs:
+    ZZZ1(    1),
+    ZZZ2(    2),
+    ZZZ3(    3);
     
-    private int instructionLength;
-    private String instructionFormat;
-    
-    private AddressMode6502(int instructionLength, String instructionFormat) {
+    private final int instructionLength;
+
+    AddressMode6502(int instructionLength) {
         this.instructionLength = instructionLength;
-        this.instructionFormat = instructionFormat;
     }
     
     public int getInstructionLength() {
         return instructionLength;
     }
-    public String getInstructionFormat() {
-        return instructionFormat;
-    }
     public boolean isOperandAbsoluteAddress() {
-        return in(ABS, ABSX, ABSY);
+        return in(ABS, ABSX, ABSY, INDABS, INDABSX);
     }
     public boolean isOperandRelativeAddress() {
         return in(REL);
@@ -60,45 +60,45 @@ public enum AddressMode6502 {
         return false;
     }
     
-    public static AddressMode6502[] MOS6502 = {
+    public static final AddressMode6502[] MOS6502 = {
         // See: https://www.masswerk.at/6502/6502_instruction_set.html (and show illegal opcodes)
-        /*         -0    -1   -2   -3   -4   -5   -6   -7   -8    -9   -A    -B    -C    -D    -E    -F */
-        /* 0- */  IMP, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* 1- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* 2- */  ABS, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* 3- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* 4- */  IMP, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* 5- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* 6- */  IMP, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  IND,  ABS,  ABS,  ABS,
-        /* 7- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* 8- */  IMM, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* 9- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSY, ABSY,
-        /* A- */  IMM, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* B- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSY, ABSY,
-        /* C- */  IMM, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* D- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* E- */  IMM, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* F- */  REL, INDY, IMM, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
+        /*         -0      -1   -2      -3   -4   -5   -6   -7   -8    -9   -A    -B      -C    -D    -E    -F */
+        /* 0- */  IMP, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* 1- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* 2- */  ABS, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* 3- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* 4- */  IMP, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* 5- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* 6- */  IMP, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM, INDABS,  ABS,  ABS,  ABS,
+        /* 7- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* 8- */  IMM, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* 9- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSY, ABSY,
+        /* A- */  IMM, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* B- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSY, ABSY,
+        /* C- */  IMM, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* D- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* E- */  IMM, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* F- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
     };
 
-    public static AddressMode6502[] WDC65C02 = {
+    public static final AddressMode6502[] WDC65C02 = {
         // See: http://6502.org/tutorials/65c02opcodes.html
-        /*         -0    -1   -2   -3   -4   -5   -6   -7   -8    -9   -A    -B    -C    -D    -E    -F */
-        /* 0- */  IMP, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* 1- */  REL, INDY,  ZP, ZPY,  ZP, ZPX, ZPX, ZPX, IMP, ABSY, ACC, ABSY,  ABS, ABSX, ABSX, ABSX,
-        /* 2- */  ABS, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* 3- */  REL, INDY,  ZP, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, ACC, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* 4- */  IMP, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* 5- */  REL, INDY,  ZP, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* 6- */  IMP, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,  IND,  ABS,  ABS,  ABS,
-        /* 7- */  REL, INDY,  ZP, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* 8- */  REL, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* 9- */  REL, INDY,  ZP, ZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY,  ABS, ABSX, ABSX, ABSY,
-        /* A- */  IMM, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* B- */  REL, INDY,  ZP, ZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSY, ABSY,
-        /* C- */  IMM, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* D- */  REL, INDY,  ZP, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
-        /* E- */  IMM, INDX, IMM, ZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,  ABS,  ABS,  ABS,  ABS,
-        /* F- */  REL, INDY,  ZP, ZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY, ABSX, ABSX, ABSX, ABSX,
+        /*         -0      -1     -2    -3    -4   -5   -6  -7   -8    -9   -A    -B       -C    -D    -E   -F */
+        /* 0- */  IMP, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, ACC, ZZZ1,     ABS,  ABS,  ABS, REL,
+        /* 1- */  REL, INDZPY, INDZP, ZZZ1,   ZP, ZPX, ZPX, ZP, IMP, ABSY, ACC, ZZZ1,     ABS, ABSX, ABSX, REL,
+        /* 2- */  ABS, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, ACC, ZZZ1,     ABS,  ABS,  ABS, REL,
+        /* 3- */  REL, INDZPY, INDZP, ZZZ1,  ZPX, ZPX, ZPX, ZP, IMP, ABSY, ACC, ZZZ1,    ABSX, ABSX, ABSX, REL,
+        /* 4- */  IMP, INDZPX,  ZZZ2, ZZZ1, ZZZ2,  ZP,  ZP, ZP, IMP,  IMM, ACC, ZZZ1,     ABS,  ABS,  ABS, REL,
+        /* 5- */  REL, INDZPY, INDZP, ZZZ1, ZZZ2, ZPX, ZPX, ZP, IMP, ABSY, IMP, ZZZ1,    ZZZ3, ABSX, ABSX, REL,
+        /* 6- */  IMP, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, ACC, ZZZ1,  INDABS,  ABS,  ABS, REL,
+        /* 7- */  REL, INDZPY, INDZP, ZZZ1,  ZPX, ZPX, ZPX, ZP, IMP, ABSY, IMP, ZZZ1, INDABSX, ABSX, ABSX, REL,
+        /* 8- */  REL, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, IMP, ZZZ1,     ABS,  ABS,  ABS, REL,
+        /* 9- */  REL, INDZPY, INDZP, ZZZ1,  ZPX, ZPX, ZPY, ZP, IMP, ABSY, IMP, ZZZ1,     ABS, ABSX, ABSX, REL,
+        /* A- */  IMM, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, IMP, ZZZ1,     ABS,  ABS,  ABS, REL,
+        /* B- */  REL, INDZPY, INDZP, ZZZ1,  ZPX, ZPX, ZPY, ZP, IMP, ABSY, IMP, ZZZ1,    ABSX, ABSX, ABSY, REL,
+        /* C- */  IMM, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, IMP,  IMM,     ABS,  ABS,  ABS, REL,
+        /* D- */  REL, INDZPY, INDZP, ZZZ1, ZZZ2, ZPX, ZPX, ZP, IMP, ABSY, IMP, ABSY,    ZZZ3, ABSX, ABSX, REL,
+        /* E- */  IMM, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, IMP, ZZZ1,     ABS,  ABS,  ABS, REL,
+        /* F- */  REL, INDZPY, INDZP, ZZZ1, ZZZ2, ZPX, ZPX, ZP, IMP, ABSY, IMP, ZZZ1,    ZZZ3, ABSX, ABSX, REL,
     };
 }
