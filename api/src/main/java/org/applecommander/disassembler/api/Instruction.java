@@ -16,18 +16,102 @@
  */
 package org.applecommander.disassembler.api;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-public interface Instruction {
-    int getAddress();
-    int getLength();
-    byte[] getBytes();
-    Optional<String> getAddressLabel();
-    void setAddressLabel(String label);
-    String getOpcodeMnemonic();
-    boolean operandHasAddress();
-    int getOperandValue();
-    void setOperandLabel(String label);
-    String formatOperandWithValue();
-    String formatOperandWithLabel();
+public record Instruction(int address, byte[] code, String mnemonic, List<Operand> operands) {
+    public Optional<Operand> addressRef() {
+        for (Operand operand : operands) {
+            if (operand.address().isPresent()) {
+                return Optional.of(operand);
+            }
+        }
+        return Optional.empty();
+    }
+
+
+    public record Operand(String opFmt, String value, Optional<Integer> address) {
+        public String format() {
+            return String.format(opFmt, value);
+        }
+        public String format(String label) {
+            return String.format(opFmt, label);
+        }
+    }
+
+    public static Builder at(int address) {
+        return new Builder(address);
+    }
+    public static class Builder {
+        private final int address;
+        private byte[] code = new byte[0];
+        private String mnemonic = "";
+        private final List<OpBuilder> opBuilders = new ArrayList<>();
+
+        private Builder(int address) {
+            this.address = address;
+        }
+        public int address() {
+            return this.address;
+        }
+        public Builder code(byte[] code) {
+            assert code != null;
+            this.code = code;
+            return this;
+        }
+        public Builder mnemonic(String mnemonic) {
+            assert mnemonic != null;
+            this.mnemonic = mnemonic;
+            return this;
+        }
+        public String mnemonic() {
+            return this.mnemonic;
+        }
+        public Builder opAddress(String opFmt, String fmt, int address) {
+            opBuilders.add(new OpBuilder(opFmt).address(fmt, address));
+            return this;
+        }
+        public Builder opValue(String fmt, Object... values) {
+            opBuilders.add(new OpBuilder("%s").value(fmt, values));
+            return this;
+        }
+        public Optional<OpBuilder> addressRef() {
+            for (OpBuilder operand : opBuilders) {
+                if (operand.address().isPresent()) {
+                    return Optional.of(operand);
+                }
+            }
+            return Optional.empty();
+        }
+        public Instruction get() {
+            List<Operand> operands = opBuilders.stream().map(OpBuilder::get).toList();
+            return new Instruction(address, code, mnemonic, operands);
+        }
+    }
+
+    public static class OpBuilder {
+        private final String opFmt;
+        private String value;
+        private Integer address;
+
+        private OpBuilder(String opFmt) {
+            this.opFmt = opFmt;
+        }
+        public OpBuilder value(String fmt, Object... values) {
+            this.value = String.format(fmt, values);
+            return this;
+        }
+        public OpBuilder address(String fmt, int address) {
+            this.value = String.format(fmt, address);
+            this.address = address;
+            return this;
+        }
+        public Optional<Integer> address() {
+            return Optional.ofNullable(address);
+        }
+        public Operand get() {
+            return new Operand(opFmt, value, Optional.ofNullable(address));
+        }
+    }
 }

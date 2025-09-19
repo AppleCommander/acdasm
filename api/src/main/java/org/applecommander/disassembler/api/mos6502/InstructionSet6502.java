@@ -49,30 +49,60 @@ public class InstructionSet6502 implements InstructionSet {
     }
 
     @Override
-    public Instruction decode(Program program) {
+    public List<String> defaultLibraryLabels() {
+        return List.of("All");
+    }
+
+    @Override
+    public int suggestedBytesPerInstruction() {
+        return 3;
+    }
+
+    @Override
+    public Instruction.Builder decode(Program program) {
         int op = Byte.toUnsignedInt(program.peek());
         
         AddressMode6502 addressMode = addressModes[op];
         Opcode6502 opcode = opcodes[op];
 
-        if (isInvalidInstruction(opcode, op)) {
-            addressMode = AddressMode6502.IMP;
-        }
-        
         int currentAddress = program.currentAddress();  // Need capture before read
         byte[] code = program.read(addressMode.getInstructionLength());
-        
-        return new Instruction6502(addressMode, opcode, currentAddress, code);
-    }
 
-    public boolean isInvalidInstruction(Opcode6502 opcode, int op) {
-        if (opcode == Opcode6502.ZZZ) {
-            return true;
+        int value = switch (code.length) {
+            case 3 -> Byte.toUnsignedInt(code[1]) + Byte.toUnsignedInt(code[2])*256;
+            case 2 -> {
+                if (addressMode.isOperandRelativeAddress()) {
+                    yield (currentAddress + 2 + code[1]) & 0xffff;   // allow sign extension
+                }
+                else {
+                    yield Byte.toUnsignedInt(code[1]);
+                }
+
+            }
+            default -> 0;
+        };
+
+        Instruction.Builder builder = Instruction.at(currentAddress)
+                .code(code)
+                .mnemonic(opcode.getMnemonic());
+        // Notes: ZZZ{1,2,3} are length of the invalid opcode. Picked most simple representation; not meant to be
+        //        technically correct.
+        switch (addressMode) {
+            case ACC, IMP, ZZZ1 -> {}
+            case ABS, REL, ZZZ3 -> builder.opAddress("%s", "$%04X", value);
+            case ABSX -> builder.opAddress("%s", "$%04X", value).opValue("X");
+            case ABSY -> builder.opAddress("%s", "$%04X", value).opValue("Y");
+            case IMM -> builder.opValue("#$%02X", value);
+            case INDABS -> builder.opAddress("(%s)", "$%04X", value);
+            case INDABSX -> builder.opAddress("(%s", "$%04X", value).opValue("X)");
+            case INDZP -> builder.opAddress("(%s)", "$%02X", value);
+            case INDZPX -> builder.opAddress("(%s", "$%02X", value).opValue("X)");
+            case INDZPY -> builder.opAddress("(%s)", "$%02X", value).opValue("Y");
+            case ZP, ZZZ2 -> builder.opAddress("%s", "$%02X", value);
+            case ZPX -> builder.opAddress("%s", "$%02X", value).opValue("X");
+            case ZPY -> builder.opAddress("%s", "$%02X", value).opValue("Y");
         }
-        else if (opcode == Opcode6502.NOP && op != 0xea) {
-            return true;
-        }
-        return false;
+        return builder;
     }
 
     @Override
@@ -94,13 +124,22 @@ public class InstructionSet6502 implements InstructionSet {
                 return "-";
             }
 
-            String fmt = addressMode.getInstructionFormat();
-            String name = opcode.name();
+            String name = opcode.getMnemonic();
             return switch (addressMode) {
-                case ACC, IMP -> String.format(fmt, name);
-                case ABS, ABSX, ABSY, REL -> String.format(fmt, name, "ADDR");
-                case IMM -> String.format(fmt, name, "VALUE");
-                case IND, INDX, INDY, ZP, ZPX, ZPY -> String.format(fmt, name, "ZP");
+                case ACC, IMP, ZZZ1 -> name;
+                case ABS, REL, ZZZ3 -> String.format("%s ADDR", name);
+                case ABSX -> String.format("%s ADDR,X", name);
+                case ABSY -> String.format("%s ADDR,Y", name);
+                case IMM -> String.format("%s #VALUE", name);
+                case INDABS -> String.format("%s (ADDR)", name);
+                case INDABSX -> String.format("%s (ADDR,X)", name);
+                case INDZP -> String.format("%s (ZP)", name);
+                case INDZPX -> String.format("%s (ZP,X)", name);
+                case INDZPY -> String.format("%s (ZP),Y", name);
+                case ZP -> String.format("%s ZP", name);
+                case ZPX -> String.format("%s ZP,X", name);
+                case ZPY -> String.format("%s ZP,Y", name);
+                case ZZZ2 -> String.format("%s VALUE", name);
             };
         }
     }

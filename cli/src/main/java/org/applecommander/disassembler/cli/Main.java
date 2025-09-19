@@ -18,9 +18,10 @@ package org.applecommander.disassembler.cli;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.applecommander.disassembler.api.Disassembler;
 import org.applecommander.disassembler.api.Instruction;
@@ -40,6 +41,9 @@ import picocli.CommandLine.Parameters;
          optionListHeading = "%nOptions:%n",
          description = "AC Disassembler.")
 public class Main implements Callable<Integer> {
+    @Option(names = "--debug", description = "Print stack traces")
+    public static boolean debug;
+
     @Option(names = { "-a", "--addr", "--origin" }, converter = IntegerTypeConverter.class,
             description = "Set start address for application.")
     private int startAddress = -1;
@@ -48,21 +52,26 @@ public class Main implements Callable<Integer> {
             description = "Skip offset bytes into binary before disassembling.")
     private int offset;
     
-    @Option(names = { "--hide-labels" }, negatable = true, description = "Hide labels.")
+    @Option(names = { "--labels" }, negatable = true, description = "Show or hide labels.")
     public void selectLabelEmitter(boolean flag) {
         emitter = flag ? this::emitWithLabels : this::emitRaw;
     }
     private Consumer<Instruction> emitter = this::emitWithLabels;
     
-    @Option(names = { "--labels" }, split = ",", defaultValue = "All", description = 
-            "Select which library labels to load (default = 'All'; options are 'F800', 'Applesoft', 'ProDOS', 'DOS33', 'None').")
-    private List<String> labels;
+    @Option(names = { "--library" }, split = ",", paramLabel = "<library>", description =
+            "Select which library labels to load. Use 'All' to select all. Each CPU has a default set " +
+            "(most are 'All' except Z80).  Options are: 'F800', 'Applesoft', 'ProDOS', 'DOS', 'DISKII'. " +
+            "'None' may also be used to turn library labels off.")
+    private List<String> libraries;
 
     @ArgGroup(heading = "%nCPU Selection:%n")
-    private CpuSelection cpuSelection = new CpuSelection();
+    private final CpuSelection cpuSelection = new CpuSelection();
     
     @Parameters(arity = "1", description = "File to disassemble.")
     private Path file;
+
+    // Locals
+    private final Map<Integer,String> labels = new HashMap<>();
     
     public static void main(String[] args) {
         int exitCode = new CommandLine(new Main())
@@ -91,53 +100,69 @@ public class Main implements Callable<Integer> {
         }
 
         final byte[] code = Files.readAllBytes(file);
-        
-        if (labels.contains("All")) {
-            labels.clear();
-            labels.addAll(Disassembler.sections());
+
+        // CPU library labels defaults:
+        if (libraries == null) {
+            libraries = cpuSelection.instructionSet.defaultLibraryLabels();
         }
-        else if (labels.contains("None")) {
-            labels.clear();
+        // Remap the keywords:  (note: Most libraries will be defined with "List.of('All|None')" which is immutable)
+        if (libraries.contains("All")) {
+            libraries = new ArrayList<>();
+            libraries.addAll(Disassembler.sections());
         }
-        
-        List<Instruction> instructions = Disassembler.with(code)
+        else if (libraries.contains("None")) {
+            libraries = new ArrayList<>();
+        }
+
+        List<Instruction> assembly = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
                 .use(cpuSelection.get())
-                .section(labels)
-                .decode();
+                .section(libraries)
+                .decode(labels);
 
-        instructions.forEach(emitter::accept);
+        assembly.forEach(emitter);
         
         return 0;
     }
     
     public void emitWithLabels(Instruction instruction) {
-        System.out.printf("%04X- ", instruction.getAddress());
+        System.out.printf("%04X- ", instruction.address());
         
-        byte[] code = instruction.getBytes();
-        for (int i=0; i<3; i++) {
+        byte[] code = instruction.code();
+        for (int i=0; i<cpuSelection.instructionSet.suggestedBytesPerInstruction(); i++) {
             if (i >= code.length) {
-                System.out.printf("   ");
+                System.out.print("   ");
             } else {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" %-10.10s ", instruction.getAddressLabel().orElse(""));
-        System.out.printf("%s\n", instruction.formatOperandWithLabel());
+        System.out.printf(" %-10.10s ", labels.getOrDefault(instruction.address(), ""));
+        System.out.printf("%-5.5s ", instruction.mnemonic());
+        System.out.printf("%s\n", instruction.operands().stream().map(operand -> {
+                if (operand.address().isPresent() && labels.containsKey(operand.address().get())) {
+                    return operand.format(labels.get(operand.address().get()));
+                }
+                else {
+                    return operand.format();
+                }
+            })
+            .collect(Collectors.joining(",")));
     }
     public void emitRaw(Instruction instruction) {
-        System.out.printf("%04X- ", instruction.getAddress());
+        System.out.printf("%04X- ", instruction.address());
         
-        byte[] code = instruction.getBytes();
-        for (int i=0; i<3; i++) {
+        byte[] code = instruction.code();
+        for (int i=0; i<cpuSelection.instructionSet.suggestedBytesPerInstruction(); i++) {
             if (i >= code.length) {
-                System.out.printf("   ");
+                System.out.print("   ");
             } else {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" %s\n", instruction.formatOperandWithValue());
+        System.out.printf(" %-5.5s ", instruction.mnemonic());
+        System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
+                .collect(Collectors.joining(",")));
     }
     
     private static class CpuSelection {

@@ -9,58 +9,66 @@ This project is primarily created to supply a reusable Java disassembler for the
 
 ```
 $ acdasm --help
-Usage: acdasm [-hV] [--[no-]hide-labels] [-a=<startAddress>]
-              [--offset=<offset>] [--labels=<labels>[,<labels>...]]... [--6502S
-              | --Z80 | --65C02 | --6502X | --SWEET16 | --6502] <file>
+Usage: acdasm [-hV] [--debug] [--[no-]labels] [-a=<startAddress>]
+              [--offset=<offset>] [--library=<library>[,<library>...]]...
+              [--6502S | --Z80 | --6502 | --65C02 | --6502X | --SWEET16] <file>
 
 AC Disassembler.
-      <file>               File to disassemble.
+      <file>              File to disassemble.
 
 Options:
   -a, --addr, --origin=<startAddress>
-                           Set start address for application.
-  -h, --help               Show this help message and exit.
-      --[no-]hide-labels   Hide labels.
-      --labels=<labels>[,<labels>...]
-                           Select which library labels to load (default =
-                             'All'; options are 'F800', 'Applesoft', 'ProDOS',
-                             'DOS33', 'None').
-      --offset=<offset>    Skip offset bytes into binary before disassembling.
-  -V, --version            Print version information and exit.
+                          Set start address for application.
+      --debug             Print stack traces
+  -h, --help              Show this help message and exit.
+      --[no-]labels       Show or hide labels.
+      --library=<library>[,<library>...]
+                          Select which library labels to load. Use 'All' to
+                            select all. Each CPU has a default set (most are
+                            'All' except Z80).  Options are: 'F800',
+                            'Applesoft', 'ProDOS', 'DOS', 'DISKII'. 'None' may
+                            also be used to turn library labels off.
+      --offset=<offset>   Skip offset bytes into binary before disassembling.
+  -V, --version           Print version information and exit.
 
 CPU Selection:
-      --6502               MOS 6502.
-      --6502S              MOS 6502 with SWEET16 switching.
-      --6502X              MOS 6502 + 'illegal' instructions.
-      --65C02              WDC 65C02.
-      --SWEET16            SWEET16.
-      --Z80                Zilog Z80.
+      --6502              MOS 6502.
+      --6502S             MOS 6502 with SWEET16 switching.
+      --6502X             MOS 6502 + 'illegal' instructions.
+      --65C02             WDC 65C02.
+      --SWEET16           SWEET16.
+      --Z80               Zilog Z80.
 ```
 
 Sample runs:
 
 ```
-$ acdasm --6502 -a 0x220 COPY.OBJ1.bin         
-0220- 88        L0220      DEY
-0221- B0 02                BCS L0225
-0223- A0 B7                LDY #$B7
-0225- A9 89     L0225      LDA #$89
-0227- 20 80 02             JSR L0280
+$ acdasm --6502 --addr 0x2a0 COPY.OBJ0.bin 
+02A0- AD D8 03             LDA   $03D8
+02A3- 85 3D                STA   A1H
+02A5- A9 68                LDA   #$68
+02A7- 85 3C                STA   A1L
+02A9- AD D0 02             LDA   L02D0
+02AC- A0 00                LDY   #$00
+02AE- 91 3C                STA   (A1L),Y
+02B0- C8                   INY   
+02B1- C8                   INY   
+02B2- AD CE 02             LDA   L02CE
 ...
 ```
 
 ```
-$ acdasm --Z80 DUMP.COM
-0100- 21 00 00             LD HL,0000H
-0103- 39                   ADD SP
-0104- 22 15 02             LD L0215,HL
-0107- 31 57 02             LD SP,L0257
-010A- CD C1 01             CALL L01C1
-010D- FE FF                CP FFH
-010F- C2 1B 01             JP NZ,L011B
-0112- 11 F3 01             LD DE,L01F3
-0115- CD 9C 01             CALL L019C
-0118- C3 51 01             JP L0151
+$ acdasm --Z80 DUMP.COM.bin 
+0100- 21 00 00                   LD    HL,0000H
+0103- 39                         ADD   SP
+0104- 22 15 02                   LD    L0215,HL
+0107- 31 57 02                   LD    SP,0257H
+010A- CD C1 01                   CALL  L01C1
+010D- FE FF                      CP    FFH
+010F- C2 1B 01                   JP    NZ,L011B
+0112- 11 F3 01                   LD    DE,01F3H
+0115- CD 9C 01                   CALL  L019C
+0118- C3 51 01                   JP    L0151
 ...
 ```
 

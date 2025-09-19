@@ -18,7 +18,6 @@ package org.applecommander.disassembler.api.switching6502;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Function;
 
@@ -33,10 +32,10 @@ public class InstructionSet6502Switching implements InstructionSet {
         return new InstructionSet6502Switching(InstructionSet6502.for6502(), InstructionSetSWEET16.forSWEET16());
     }
     
-    private InstructionSet6502 mos6502;
-    private InstructionSetSWEET16 sweet16;
-    private Function<Program,Instruction> strategy = this::decode6502;
-    private Queue<Instruction> pending = new LinkedList<>();
+    private final InstructionSet6502 mos6502;
+    private final InstructionSetSWEET16 sweet16;
+    private Function<Program,Instruction.Builder> strategy = this::decode6502;
+    private final Queue<Instruction.Builder> pending = new LinkedList<>();
     
     private InstructionSet6502Switching(InstructionSet6502 mos6502, InstructionSetSWEET16 sweet16) {
         this.mos6502 = mos6502;
@@ -49,7 +48,17 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
-    public Instruction decode(Program program) {
+    public List<String> defaultLibraryLabels() {
+        return List.of("All");
+    }
+
+    @Override
+    public int suggestedBytesPerInstruction() {
+        return Math.max(mos6502.suggestedBytesPerInstruction(), sweet16.suggestedBytesPerInstruction());
+    }
+
+    @Override
+    public Instruction.Builder decode(Program program) {
         if (!pending.isEmpty()) {
             return pending.remove();
         }
@@ -61,88 +70,22 @@ public class InstructionSet6502Switching implements InstructionSet {
         throw new RuntimeException("Not implemented");
     }
 
-    Instruction decode6502(Program program) {
-        Instruction instruction = mos6502.decode(program);
-        if ("JSR".equals(instruction.getOpcodeMnemonic()) && instruction.getOperandValue() == 0xf689) {
+    Instruction.Builder decode6502(Program program) {
+        Instruction.Builder builder = mos6502.decode(program);
+        int operandAddress = builder.addressRef().flatMap(Instruction.OpBuilder::address).orElse(0);
+        if ("JSR".equals(builder.mnemonic()) && operandAddress == 0xf689) {
             strategy = this::decodeSWEET16;
-            pending.add(Directive.of(".SWEET16", program.currentAddress()));
+            pending.add(Instruction.at(program.currentAddress()).mnemonic(".SWEET16"));
         }
-        return instruction;
+        return builder;
     }
     
-    Instruction decodeSWEET16(Program program) {
-        Instruction instruction = sweet16.decode(program);
-        if ("RTN".equals(instruction.getOpcodeMnemonic())) {
+    Instruction.Builder decodeSWEET16(Program program) {
+        Instruction.Builder builder = sweet16.decode(program);
+        if ("RTN".equals(builder.mnemonic())) {
             strategy = this::decode6502;
-            pending.add(Directive.of(".6502", program.currentAddress()));
+            pending.add(Instruction.at(program.currentAddress()).mnemonic(".6502"));
         }
-        return instruction;
-    }
-    
-    public static class Directive implements Instruction {
-        public static Directive of(String name, int address) {
-            return new Directive(name, address);
-        }
-        
-        private String name;
-        private int address;
-
-        private Directive(String name, int address) {
-            this.name = name;
-            this.address = address;
-        }
-        
-        @Override
-        public int getAddress() {
-            return address;
-        }
-
-        @Override
-        public int getLength() {
-            return 0;
-        }
-
-        @Override
-        public byte[] getBytes() {
-            return new byte[0];
-        }
-        
-        @Override
-        public Optional<String> getAddressLabel() {
-            return Optional.empty();
-        }
-        
-        @Override
-        public void setAddressLabel(String label) {
-        }
-
-        @Override
-        public String getOpcodeMnemonic() {
-            return name;
-        }
-
-        @Override
-        public boolean operandHasAddress() {
-            return false;
-        }
-
-        @Override
-        public int getOperandValue() {
-            return 0;
-        }
-        
-        @Override
-        public void setOperandLabel(String label) {
-        }
-
-        @Override
-        public String formatOperandWithValue() {
-            return name;
-        }
-
-        @Override
-        public String formatOperandWithLabel() {
-            return formatOperandWithValue();
-        }
+        return builder;
     }
 }

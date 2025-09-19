@@ -32,17 +32,26 @@ public class InstructionSetSWEET16 implements InstructionSet {
     }
 
     @Override
+    public List<String> defaultLibraryLabels() {
+        return List.of("All");
+    }
+
+    @Override
     public int defaultStartAddress() {
         return 0x300;
     }
 
     @Override
-    public Instruction decode(Program program) {
+    public int suggestedBytesPerInstruction() {
+        return 3;
+    }
+
+    @Override
+    public Instruction.Builder decode(Program program) {
         int op = Byte.toUnsignedInt(program.peek());
         int low = op & 0x0f;
         int high = (op & 0xf0) >> 4;
-        
-        int register = low;
+
         AddressModeSWEET16 addressMode;
         OpcodeSWEET16 opcode;
         if (high == 0) {
@@ -53,15 +62,37 @@ public class InstructionSetSWEET16 implements InstructionSet {
             opcode = OpcodeSWEET16.REGISTER_OPS[high];
             addressMode = AddressModeSWEET16.REGISTER_OPS[high];
         }
-        
+
         if (opcode == OpcodeSWEET16.ZZZ) {
             addressMode = AddressModeSWEET16.IMP;
         }
 
         int currentAddress = program.currentAddress();  // Need capture before read
         byte[] code = program.read(addressMode.getInstructionLength());
+        int value = switch (code.length) {
+            case 3 -> Byte.toUnsignedInt(code[1]) + Byte.toUnsignedInt(code[2])*256;
+            case 2 -> {
+                if (addressMode.isOperandRelativeAddress()) {
+                    yield (currentAddress + 2 + code[1]) & 0xffff;   // allow sign extension
+                }
+                else {
+                    yield Byte.toUnsignedInt(code[1]);
+                }
+            }
+            default -> 0;
+        };
 
-        return new InstructionSWEET16(addressMode, opcode, register, currentAddress, code);
+        Instruction.Builder builder = Instruction.at(currentAddress)
+                .code(code)
+                .mnemonic(opcode.getMnemonic());
+        switch(addressMode) {
+            case CON -> builder.opValue("R%X", low).opValue("#%s", "$%04X", value);
+            case DIR -> builder.opValue("R%X", low);
+            case IND -> builder.opValue("@R%X", low);
+            case BRA -> builder.opAddress("%s", "$%04X", value);
+            case IMP -> {}
+        };
+        return builder;
     }
 
     @Override
@@ -90,20 +121,21 @@ public class InstructionSetSWEET16 implements InstructionSet {
                 opcode = OpcodeSWEET16.REGISTER_OPS[high];
                 addressMode = AddressModeSWEET16.REGISTER_OPS[high];
             }
-
             if (opcode == OpcodeSWEET16.ZZZ) {
                 addressMode = AddressModeSWEET16.IMP;
             }
 
-            String fmt = addressMode.getInstructionFormat();
-            String name = opcode.name();
-            return switch (addressMode) {
-                case CON -> String.format(fmt, name, low, "VALUE");
-                case ABS -> String.format(fmt, name, low, "ADDR");
-                case DIR, IND -> String.format(fmt, name, low);
-                case BRA -> String.format(fmt, name, "ADDR");
-                case IMP -> name;
-            };
+            StringBuilder sb = new StringBuilder();
+            sb.append(opcode.getMnemonic());
+            sb.append(" ");
+            sb.append(switch (addressMode) {
+                case CON -> String.format("R%X,#VALUE", low);
+                case BRA -> "ADDR";
+                case DIR -> String.format("R%X", low);
+                case IND -> String.format("@R%X", low);
+                case IMP -> "";
+            });
+            return sb.toString();
         }
     }
 }

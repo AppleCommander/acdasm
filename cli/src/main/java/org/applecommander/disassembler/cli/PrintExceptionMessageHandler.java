@@ -27,7 +27,13 @@ class PrintExceptionMessageHandler implements IExecutionExceptionHandler {
                                         ParseResult parseResult) {
 
         // bold red error message
-        cmd.getErr().println(cmd.getColorScheme().errorText(ex.getMessage()));
+        if (Main.debug) {
+            ex.printStackTrace(cmd.getOut());
+        }
+        else {
+            cmd.getErr().println(cmd.getColorScheme().errorText(ex.getMessage() == null
+                    ? "Null pointer exception" : ex.getMessage()));
+        }
 
         return cmd.getExitCodeExceptionMapper() != null
                     ? cmd.getExitCodeExceptionMapper().getExitCode(ex)

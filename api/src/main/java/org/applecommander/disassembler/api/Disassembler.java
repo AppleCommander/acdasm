@@ -33,7 +33,7 @@ import org.ini4j.Profile.Section;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 
 public class Disassembler {
-    private static Ini ini = new Ini();
+    private static final Ini ini = new Ini();
     static {
         try (InputStream is = Disassembler.class.getResourceAsStream("/addresses.ini")) {
             ini.load(is);
@@ -46,48 +46,41 @@ public class Disassembler {
     private int bytesToSkip;
     private byte[] code;
     private InstructionSet instructionSet;
-    private Map<Integer,String> labels = new HashMap<>();
 
     public static Builder with(byte[] code) {
         return new Builder(code);
     }
     
-    public List<Instruction> decode() {
-        List<Instruction> instructions = new ArrayList<>();
+    private List<Instruction> decode(Map<Integer,String> labels) {
+        List<Instruction.Builder> assembly = new ArrayList<>();
         Program program = new Program(code,startAddress);
 
+        // 1st pass: Gather all the instruction builders and identify all target addresses
         while (program.hasMore()) {
-            Instruction instruction = null;
+            Instruction.Builder builder = null;
             if (program.currentOffset() < bytesToSkip) {
-                instruction = SkippedInstruction.from(program);
+                builder = Instruction.at(program.currentAddress())
+                        .mnemonic("---")
+                        .code(program.read(1));
             }
             else {
-                instruction = instructionSet.decode(program);
+                builder = instructionSet.decode(program);
             }
-            instructions.add(instruction);
-            
-            boolean between = (instruction.getOperandValue() >= startAddress)
-                           && (instruction.getOperandValue() < startAddress + code.length);
-            if (between && instruction.operandHasAddress()) {
-                labels.computeIfAbsent(instruction.getOperandValue(), addr -> String.format("L%04X", addr));
-            }
+            assembly.add(builder);
+
+            builder.addressRef().flatMap(Instruction.OpBuilder::address).ifPresent(address -> {
+                if ((address >= startAddress) && (address < startAddress + code.length)) {
+                    labels.computeIfAbsent(address, addr -> String.format("L%04X", addr));
+                }
+            });
         }
 
-        for (Instruction instruction : instructions) {
-            if (labels.containsKey(instruction.getAddress())) {
-                instruction.setAddressLabel(labels.get(instruction.getAddress()));
-            }
-            if (instruction.operandHasAddress() && labels.containsKey(instruction.getOperandValue())) {
-                instruction.setOperandLabel(labels.get(instruction.getOperandValue()));
-            }
-        }
-        
-        return instructions;
+        return assembly.stream().map(Instruction.Builder::get).toList();
     }
     
     public static class Builder {
-        private Set<String> sections = new HashSet<>();
-        private Disassembler disassembler = new Disassembler();
+        private final Set<String> sections = new HashSet<>();
+        private final Disassembler disassembler = new Disassembler();
         
         public Builder(byte[] code) {
             disassembler.startAddress = 0x300;
@@ -95,6 +88,10 @@ public class Disassembler {
             disassembler.instructionSet = InstructionSet6502.for6502();
         }
         public List<Instruction> decode() {
+            return this.decode(new HashMap<>());
+        }
+        public List<Instruction> decode(Map<Integer,String> labels) {
+            assert labels != null;
             // merge in all selected sections
             for (String name : sections) {
                 Section section = ini.get(name);
@@ -103,13 +100,11 @@ public class Disassembler {
                 }
                 for (Map.Entry<String,String> entry : section.entrySet()) {
                     Optional<Integer> address = convert(entry.getValue());
-                    if (address.isPresent()) {
-                        disassembler.labels.putIfAbsent(address.get(), entry.getKey());
-                    }
+                    address.ifPresent(integer -> labels.putIfAbsent(integer, entry.getKey()));
                 }
             }
             
-            return disassembler.decode();
+            return disassembler.decode(labels);
         }
         
         public Builder startingAddress(int address) {
@@ -139,7 +134,7 @@ public class Disassembler {
         
         public Builder section(List<String> names) {
             if (names != null) {
-                names.forEach(this.sections::add);
+                this.sections.addAll(names);
             }
             return this;
         }
