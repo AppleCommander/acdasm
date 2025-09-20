@@ -1,0 +1,289 @@
+# See http://6502.org/source/interpreters/sweet16.htm
+
+# All opcodes assumed to be at $300
+300:
+
+# Non-register OPS
+00          RTN
+01 44       BR $0346
+02 44       BNC $0346
+03 44 -     BC $0346
+04 44       BP $0346
+05 44       BM $0346
+06 44       BZ $0346
+07 44       BNZ $0346
+08 44       BM1 $0346
+09 44       BNM1 $0346
+0A          BK
+0B          RS
+0C 44       BS $0346
+
+# SET Rn,Constant [ 1n Low High ]
+10 34 12    SET R0,#$1234
+11 34 12    SET R1,#$1234
+12 34 12    SET R2,#$1234
+13 34 12    SET R3,#$1234
+14 34 12    SET R4,#$1234
+15 34 12    SET R5,#$1234
+16 34 12    SET R6,#$1234
+17 34 12    SET R7,#$1234
+18 34 12    SET R8,#$1234
+19 34 12    SET R9,#$1234
+1A 34 12    SET R10,#$1234
+1B 34 12    SET R11,#$1234
+1C 34 12    SET R12,#$1234
+1D 34 12    SET R13,#$1234
+1E 34 12    SET R14,#$1234
+1F 34 12    SET R15,#$1234
+
+# LD Rn [ 2n ]
+20          LD R0
+21          LD R1
+22          LD R2
+23          LD R3
+24          LD R4
+25          LD R5
+26          LD R6
+27          LD R7
+28          LD R8
+29          LD R9
+2A          LD R10
+2B          LD R11
+2C          LD R12
+2D          LD R13
+2E          LD R14
+2F          LD R15
+
+# ST Rn [ 3n ]
+30          ST R0
+31          ST R1
+32          ST R2
+33          ST R3
+34          ST R4
+35          ST R5
+36          ST R6
+37          ST R7
+38          ST R8
+39          ST R9
+3A          ST R10
+3B          ST R11
+3C          ST R12
+3D          ST R13
+3E          ST R14
+3F          ST R15
+
+# LD @Rn [ 4n ]
+40          LD @R0
+41          LD @R1
+42          LD @R2
+43          LD @R3
+44          LD @R4
+45          LD @R5
+46          LD @R6
+47          LD @R7
+48          LD @R8
+49          LD @R9
+4A          LD @R10
+4B          LD @R11
+4C          LD @R12
+4D          LD @R13
+4E          LD @R14
+4F          LD @R15
+
+# ST @Rn [ 5n ]
+50          ST @R0
+51          ST @R1
+52          ST @R2
+53          ST @R3
+54          ST @R4
+55          ST @R5
+56          ST @R6
+57          ST @R7
+58          ST @R8
+59          ST @R9
+5A          ST @R10
+5B          ST @R11
+5C          ST @R12
+5D          ST @R13
+5E          ST @R14
+5F          ST @R15
+
+# LDD @Rn [ 6n ]
+60          LDD @R0
+61          LDD @R1
+62          LDD @R2
+63          LDD @R3
+64          LDD @R4
+65          LDD @R5
+66          LDD @R6
+67          LDD @R7
+68          LDD @R8
+69          LDD @R9
+6A          LDD @R10
+6B          LDD @R11
+6C          LDD @R12
+6D          LDD @R13
+6E          LDD @R14
+6F          LDD @R15
+
+# STD @Rn [ 7n ]
+70          STD @R0
+71          STD @R1
+72          STD @R2
+73          STD @R3
+74          STD @R4
+75          STD @R5
+76          STD @R6
+77          STD @R7
+78          STD @R8
+79          STD @R9
+7A          STD @R10
+7B          STD @R11
+7C          STD @R12
+7D          STD @R13
+7E          STD @R14
+7F          STD @R15
+
+# POP @Rn [ 8n ]
+80          POP @R0
+81          POP @R1
+82          POP @R2
+83          POP @R3
+84          POP @R4
+85          POP @R5
+86          POP @R6
+87          POP @R7
+88          POP @R8
+89          POP @R9
+8A          POP @R10
+8B          POP @R11
+8C          POP @R12
+8D          POP @R13
+8E          POP @R14
+8F          POP @R15
+
+# STP @Rn [ 9n ]
+90          STP @R0
+91          STP @R1
+92          STP @R2
+93          STP @R3
+94          STP @R4
+95          STP @R5
+96          STP @R6
+97          STP @R7
+98          STP @R8
+99          STP @R9
+9A          STP @R10
+9B          STP @R11
+9C          STP @R12
+9D          STP @R13
+9E          STP @R14
+9F          STP @R15
+
+# ADD Rn [ An ]
+A0          ADD R0
+A1          ADD R1
+A2          ADD R2
+A3          ADD R3
+A4          ADD R4
+A5          ADD R5
+A6          ADD R6
+A7          ADD R7
+A8          ADD R8
+A9          ADD R9
+AA          ADD R10
+AB          ADD R11
+AC          ADD R12
+AD          ADD R13
+AE          ADD R14
+AF          ADD R15
+
+# SUB Rn [ Bn ]
+B0          SUB R0
+B1          SUB R1
+B2          SUB R2
+B3          SUB R3
+B4          SUB R4
+B5          SUB R5
+B6          SUB R6
+B7          SUB R7
+B8          SUB R8
+B9          SUB R9
+BA          SUB R10
+BB          SUB R11
+BC          SUB R12
+BD          SUB R13
+BE          SUB R14
+BF          SUB R15
+
+# POPD @Rn [ Cn ]
+C0          POPD @R0
+C1          POPD @R1
+C2          POPD @R2
+C3          POPD @R3
+C4          POPD @R4
+C5          POPD @R5
+C6          POPD @R6
+C7          POPD @R7
+C8          POPD @R8
+C9          POPD @R9
+CA          POPD @R10
+CB          POPD @R11
+CC          POPD @R12
+CD          POPD @R13
+CE          POPD @R14
+CF          POPD @R15
+
+# CPR Rn [ Dn ]
+D0          CPR R0
+D1          CPR R1
+D2          CPR R2
+D3          CPR R3
+D4          CPR R4
+D5          CPR R5
+D6          CPR R6
+D7          CPR R7
+D8          CPR R8
+D9          CPR R9
+DA          CPR R10
+DB          CPR R11
+DC          CPR R12
+DD          CPR R13
+DE          CPR R14
+DF          CPR R15
+
+# INR Rn [ En ]
+E0          INR R0
+E1          INR R1
+E2          INR R2
+E3          INR R3
+E4          INR R4
+E5          INR R5
+E6          INR R6
+E7          INR R7
+E8          INR R8
+E9          INR R9
+EA          INR R10
+EB          INR R11
+EC          INR R12
+ED          INR R13
+EE          INR R14
+EF          INR R15
+
+# DCR Rn [ Fn ]
+F0          DCR R0
+F1          DCR R1
+F2          DCR R2
+F3          DCR R3
+F4          DCR R4
+F5          DCR R5
+F6          DCR R6
+F7          DCR R7
+F8          DCR R8
+F9          DCR R9
+FA          DCR R10
+FB          DCR R11
+FC          DCR R12
+FD          DCR R13
+FE          DCR R14
+FF          DCR R15

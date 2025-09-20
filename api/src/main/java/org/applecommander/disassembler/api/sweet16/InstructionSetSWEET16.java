@@ -86,9 +86,9 @@ public class InstructionSetSWEET16 implements InstructionSet {
                 .code(code)
                 .mnemonic(opcode.getMnemonic());
         switch(addressMode) {
-            case CON -> builder.opValue("R%X", low).opValue("#%s", "$%04X", value);
-            case DIR -> builder.opValue("R%X", low);
-            case IND -> builder.opValue("@R%X", low);
+            case CON -> builder.opValue("R%d", low).opValue("#$%04X", value);
+            case DIR -> builder.opValue("R%d", low);
+            case IND -> builder.opValue("@R%d", low);
             case BRA -> builder.opAddress("%s", "$%04X", value);
             case IMP -> {}
         }

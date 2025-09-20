@@ -1,6 +1,7 @@
 package org.applecommander.disassembler.api;
 
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
+import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -39,6 +40,12 @@ public class InstructionSetTest {
         test(InstructionSet6502.for6502withIllegalInstructions(), address, code, assembly);
     }
 
+    @ParameterizedTest(name = "SWEET16[{index}] => {2}")
+    @ArgumentsSource(InstructionSetProviderSWEET16.class)
+    public void testSWEET16InstructionSet(int address, byte[] code, String assembly) {
+        test(InstructionSetSWEET16.forSWEET16(), address, code, assembly);
+    }
+
     void test(InstructionSet instructionSet, int address, byte[] code, String assembly) {
         List<Instruction> instructions = Disassembler.with(code).use(instructionSet).startingAddress(address).decode();
         assertEquals(1, instructions.size());
@@ -69,6 +76,11 @@ public class InstructionSetTest {
     static class InstructionSetProvider6502X extends InstructionSetProvider {
         InstructionSetProvider6502X() {
             super("/6502.txt", "/6502X.txt");
+        }
+    }
+    static class InstructionSetProviderSWEET16 extends InstructionSetProvider {
+        InstructionSetProviderSWEET16() {
+            super("/SWEET16.txt");
         }
     }
     static class InstructionSetProvider implements ArgumentsProvider {
@@ -106,10 +118,14 @@ public class InstructionSetTest {
                         // Add test case (example "69 44      ADC #$44")
                         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                         StringBuilder assembly = new StringBuilder();
+                        boolean lookingForHex = true;
                         for (String part : line.split(" ")) {
-                            if (HEX.matcher(part).matches()) {
+                            if (lookingForHex && HEX.matcher(part).matches()) {
                                 bytes.write(Integer.parseInt(part, 16));
                             } else {
+                                lookingForHex = false;
+                                // Using a "-" to separate opcodes that happen to be 2 letters which also are hex digits (aka SWEET16 "BC")
+                                if ("-".equals(part)) continue;
                                 if (!assembly.isEmpty()) assembly.append(' ');
                                 assembly.append(part);
                             }
