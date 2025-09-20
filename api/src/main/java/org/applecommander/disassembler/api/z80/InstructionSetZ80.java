@@ -50,7 +50,7 @@ public class InstructionSetZ80 implements InstructionSet {
     }
 
     @Override
-    public Instruction.Builder decode(Program program) {
+    public Instruction decode(Program program) {
         int addr = program.currentAddress();
         Instruction.Builder builder = Instruction.at(addr);
 
@@ -132,7 +132,7 @@ public class InstructionSetZ80 implements InstructionSet {
         //
         //return new InstructionZ80(addr, op.mnemonic, operandFmt, operandValue, program.read(length));
         builder.code(program.read(length));
-        return builder;
+        return builder.get();
     }
 
     @Override
@@ -422,6 +422,6 @@ public class InstructionSetZ80 implements InstructionSet {
         PREFIX,
         OVERRIDE,
         RD,
-        BIT;
+        BIT
     }
 }
