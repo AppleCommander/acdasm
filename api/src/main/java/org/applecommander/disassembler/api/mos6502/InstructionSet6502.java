@@ -60,7 +60,7 @@ public class InstructionSet6502 implements InstructionSet {
 
     @Override
     public Instruction decode(Program program) {
-        int op = Byte.toUnsignedInt(program.peek());
+        int op = program.peek();
         
         AddressMode6502 addressMode = addressModes[op];
         Opcode6502 opcode = opcodes[op];
