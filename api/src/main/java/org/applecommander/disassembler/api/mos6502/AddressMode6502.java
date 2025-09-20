@@ -63,22 +63,22 @@ public enum AddressMode6502 {
     public static final AddressMode6502[] MOS6502 = {
         // See: https://www.masswerk.at/6502/6502_instruction_set.html (and show illegal opcodes)
         /*         -0      -1   -2      -3   -4   -5   -6   -7   -8    -9   -A    -B      -C    -D    -E    -F */
-        /* 0- */  IMP, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
-        /* 1- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
-        /* 2- */  ABS, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
-        /* 3- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
-        /* 4- */  IMP, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
-        /* 5- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
-        /* 6- */  IMP, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM, INDABS,  ABS,  ABS,  ABS,
-        /* 7- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* 0- */  IMP, INDZPX, IMP, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* 1- */  REL, INDZPY, IMP, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* 2- */  ABS, INDZPX, IMP, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* 3- */  REL, INDZPY, IMP, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* 4- */  IMP, INDZPX, IMP, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM,    ABS,  ABS,  ABS,  ABS,
+        /* 5- */  REL, INDZPY, IMP, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* 6- */  IMP, INDZPX, IMP, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, ACC,  IMM, INDABS,  ABS,  ABS,  ABS,
+        /* 7- */  REL, INDZPY, IMP, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
         /* 8- */  IMM, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,    ABS,  ABS,  ABS,  ABS,
-        /* 9- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSY, ABSY,
+        /* 9- */  REL, INDZPY, IMP, INDZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSY, ABSY,
         /* A- */  IMM, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,    ABS,  ABS,  ABS,  ABS,
-        /* B- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSY, ABSY,
+        /* B- */  REL, INDZPY, IMP, INDZPY, ZPX, ZPX, ZPY, ZPY, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSY, ABSY,
         /* C- */  IMM, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,    ABS,  ABS,  ABS,  ABS,
-        /* D- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* D- */  REL, INDZPY, IMP, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
         /* E- */  IMM, INDZPX, IMM, INDZPX,  ZP,  ZP,  ZP,  ZP, IMP,  IMM, IMP,  IMM,    ABS,  ABS,  ABS,  ABS,
-        /* F- */  REL, INDZPY, IMM, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
+        /* F- */  REL, INDZPY, IMP, INDZPY, ZPX, ZPX, ZPX, ZPX, IMP, ABSY, IMP, ABSY,   ABSX, ABSX, ABSX, ABSX,
     };
 
     public static final AddressMode6502[] WDC65C02 = {

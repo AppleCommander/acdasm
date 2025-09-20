@@ -33,6 +33,12 @@ public class InstructionSetTest {
         test(InstructionSet6502.for65C02(), address, code, assembly);
     }
 
+    @ParameterizedTest(name = "6502X[{index}] => {2}")
+    @ArgumentsSource(InstructionSetProvider6502X.class)
+    public void test6502XInstructionSet(int address, byte[] code, String assembly) {
+        test(InstructionSet6502.for6502withIllegalInstructions(), address, code, assembly);
+    }
+
     void test(InstructionSet instructionSet, int address, byte[] code, String assembly) {
         List<Instruction> instructions = Disassembler.with(code).use(instructionSet).startingAddress(address).decode();
         assertEquals(1, instructions.size());
@@ -58,6 +64,11 @@ public class InstructionSetTest {
     static class InstructionSetProvider65C02 extends InstructionSetProvider {
         InstructionSetProvider65C02() {
             super("/6502.txt", "/65c02.txt");
+        }
+    }
+    static class InstructionSetProvider6502X extends InstructionSetProvider {
+        InstructionSetProvider6502X() {
+            super("/6502.txt", "/6502X.txt");
         }
     }
     static class InstructionSetProvider implements ArgumentsProvider {
