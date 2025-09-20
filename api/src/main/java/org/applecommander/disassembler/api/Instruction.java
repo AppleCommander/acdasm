@@ -47,7 +47,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         private final int address;
         private byte[] code = new byte[0];
         private String mnemonic = "";
-        private final List<OpBuilder> opBuilders = new ArrayList<>();
+        private final List<Operand> operands = new ArrayList<>();
 
         private Builder(int address) {
             this.address = address;
@@ -69,15 +69,15 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             return this.mnemonic;
         }
         public Builder opAddress(String opFmt, String fmt, int address) {
-            opBuilders.add(new OpBuilder(opFmt).address(fmt, address));
+            operands.add(new OpBuilder(opFmt).address(fmt, address).get());
             return this;
         }
         public Builder opValue(String fmt, Object... values) {
-            opBuilders.add(new OpBuilder("%s").value(fmt, values));
+            operands.add(new OpBuilder("%s").value(fmt, values).get());
             return this;
         }
-        public Optional<OpBuilder> addressRef() {
-            for (OpBuilder operand : opBuilders) {
+        public Optional<Operand> addressRef() {
+            for (Operand operand : operands) {
                 if (operand.address().isPresent()) {
                     return Optional.of(operand);
                 }
@@ -85,7 +85,6 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             return Optional.empty();
         }
         public Instruction get() {
-            List<Operand> operands = opBuilders.stream().map(OpBuilder::get).toList();
             return new Instruction(address, code, mnemonic, operands);
         }
     }

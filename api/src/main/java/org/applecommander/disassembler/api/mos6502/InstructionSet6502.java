@@ -59,7 +59,7 @@ public class InstructionSet6502 implements InstructionSet {
     }
 
     @Override
-    public Instruction.Builder decode(Program program) {
+    public Instruction decode(Program program) {
         int op = Byte.toUnsignedInt(program.peek());
         
         AddressMode6502 addressMode = addressModes[op];
@@ -102,7 +102,7 @@ public class InstructionSet6502 implements InstructionSet {
             case ZPX -> builder.opAddress("%s", "$%02X", value).opValue("X");
             case ZPY -> builder.opAddress("%s", "$%02X", value).opValue("Y");
         }
-        return builder;
+        return builder.get();
     }
 
     @Override

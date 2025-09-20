@@ -47,7 +47,7 @@ public class InstructionSetSWEET16 implements InstructionSet {
     }
 
     @Override
-    public Instruction.Builder decode(Program program) {
+    public Instruction decode(Program program) {
         int op = Byte.toUnsignedInt(program.peek());
         int low = op & 0x0f;
         int high = (op & 0xf0) >> 4;
@@ -91,8 +91,8 @@ public class InstructionSetSWEET16 implements InstructionSet {
             case IND -> builder.opValue("@R%X", low);
             case BRA -> builder.opAddress("%s", "$%04X", value);
             case IMP -> {}
-        };
-        return builder;
+        }
+        return builder.get();
     }
 
     @Override

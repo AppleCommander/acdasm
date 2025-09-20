@@ -52,30 +52,31 @@ public class Disassembler {
     }
     
     private List<Instruction> decode(Map<Integer,String> labels) {
-        List<Instruction.Builder> assembly = new ArrayList<>();
+        List<Instruction> assembly = new ArrayList<>();
         Program program = new Program(code,startAddress);
 
         // 1st pass: Gather all the instruction builders and identify all target addresses
         while (program.hasMore()) {
-            Instruction.Builder builder = null;
+            Instruction instruction = null;
             if (program.currentOffset() < bytesToSkip) {
-                builder = Instruction.at(program.currentAddress())
+                instruction = Instruction.at(program.currentAddress())
                         .mnemonic("---")
-                        .code(program.read(1));
+                        .code(program.read(1))
+                        .get();
             }
             else {
-                builder = instructionSet.decode(program);
+                instruction = instructionSet.decode(program);
             }
-            assembly.add(builder);
+            assembly.add(instruction);
 
-            builder.addressRef().flatMap(Instruction.OpBuilder::address).ifPresent(address -> {
+            instruction.addressRef().flatMap(Instruction.Operand::address).ifPresent(address -> {
                 if ((address >= startAddress) && (address < startAddress + code.length)) {
                     labels.computeIfAbsent(address, addr -> String.format("L%04X", addr));
                 }
             });
         }
 
-        return assembly.stream().map(Instruction.Builder::get).toList();
+        return assembly;
     }
     
     public static class Builder {

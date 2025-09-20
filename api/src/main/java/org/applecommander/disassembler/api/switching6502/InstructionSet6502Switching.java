@@ -34,8 +34,8 @@ public class InstructionSet6502Switching implements InstructionSet {
     
     private final InstructionSet6502 mos6502;
     private final InstructionSetSWEET16 sweet16;
-    private Function<Program,Instruction.Builder> strategy = this::decode6502;
-    private final Queue<Instruction.Builder> pending = new LinkedList<>();
+    private Function<Program,Instruction> strategy = this::decode6502;
+    private final Queue<Instruction> pending = new LinkedList<>();
     
     private InstructionSet6502Switching(InstructionSet6502 mos6502, InstructionSetSWEET16 sweet16) {
         this.mos6502 = mos6502;
@@ -58,7 +58,7 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
-    public Instruction.Builder decode(Program program) {
+    public Instruction decode(Program program) {
         if (!pending.isEmpty()) {
             return pending.remove();
         }
@@ -70,22 +70,22 @@ public class InstructionSet6502Switching implements InstructionSet {
         throw new RuntimeException("Not implemented");
     }
 
-    Instruction.Builder decode6502(Program program) {
-        Instruction.Builder builder = mos6502.decode(program);
-        int operandAddress = builder.addressRef().flatMap(Instruction.OpBuilder::address).orElse(0);
-        if ("JSR".equals(builder.mnemonic()) && operandAddress == 0xf689) {
+    Instruction decode6502(Program program) {
+        Instruction instruction = mos6502.decode(program);
+        int operandAddress = instruction.addressRef().flatMap(Instruction.Operand::address).orElse(0);
+        if ("JSR".equals(instruction.mnemonic()) && operandAddress == 0xf689) {
             strategy = this::decodeSWEET16;
-            pending.add(Instruction.at(program.currentAddress()).mnemonic(".SWEET16"));
+            pending.add(Instruction.at(program.currentAddress()).mnemonic(".SWEET16").get());
         }
-        return builder;
+        return instruction;
     }
     
-    Instruction.Builder decodeSWEET16(Program program) {
-        Instruction.Builder builder = sweet16.decode(program);
-        if ("RTN".equals(builder.mnemonic())) {
+    Instruction decodeSWEET16(Program program) {
+        Instruction instruction = sweet16.decode(program);
+        if ("RTN".equals(instruction.mnemonic())) {
             strategy = this::decode6502;
-            pending.add(Instruction.at(program.currentAddress()).mnemonic(".6502"));
+            pending.add(Instruction.at(program.currentAddress()).mnemonic(".6502").get());
         }
-        return builder;
+        return instruction;
     }
 }
