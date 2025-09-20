@@ -22,10 +22,10 @@ import java.util.Objects;
 public class Program {
     static final int ADDRESS_SPACE = 64 * 1024; //64k Address Space
 
-    private int baseAddress;
+    private final int baseAddress;
+    private final byte[] code;
     private int offset;
-    private byte[] code;
-    
+
     public Program(byte[] code, int address) {
         Objects.requireNonNull(code);
         this.baseAddress = address;
@@ -36,11 +36,11 @@ public class Program {
     public boolean hasMore() {
         return offset < code.length;
     }
-    public byte peek() {
-        return hasMore() ? code[offset] : 0;
+    public int peek() {
+        return peek(0);
     }
-    public byte peek(int n) {
-        return offset+n < code.length ? code[offset+n] : 0;
+    public int peek(int n) {
+        return offset+n < code.length ? Byte.toUnsignedInt(code[offset+n]) : 0;
     }
     public byte[] read(int n) {
         byte[] x = Arrays.copyOfRange(code, offset, offset+n);

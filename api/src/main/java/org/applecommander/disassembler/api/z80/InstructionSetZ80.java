@@ -55,7 +55,7 @@ public class InstructionSetZ80 implements InstructionSet {
         Instruction.Builder builder = Instruction.at(addr);
 
         int length = 1;
-        int b = Byte.toUnsignedInt(program.peek());
+        int b = program.peek();
         Opcode op = ROOT_OPCODES[b];
         boolean ix = false;
         boolean iy = false;
@@ -63,13 +63,13 @@ public class InstructionSetZ80 implements InstructionSet {
         if (op.flags.contains(OVERRIDE)) {
             ix = op.opcode == 0xdd;
             iy = op.opcode == 0xfd;
-            b = Byte.toUnsignedInt(program.peek(length));
+            b = program.peek(length);
             op = ROOT_OPCODES[b];
             length++;
         }
         // Alternate prefixes next
         if (op.flags.contains(PREFIX)) {
-            b = Byte.toUnsignedInt(program.peek(length));
+            b = program.peek(length);
             if (op.opcode() == 0xed) {
                 op = ED_OPCODES[b];
             }
@@ -83,17 +83,17 @@ public class InstructionSetZ80 implements InstructionSet {
         int operandValue = 0;
         if ((op.flags.contains(DATLO) && op.flags.contains(DATHI))
                 || (op.flags.contains(ADDLO) && op.flags.contains(ADDHI))) {
-            int b1 = Byte.toUnsignedInt(program.peek(length));
-            int b2 = Byte.toUnsignedInt(program.peek(length + 1));
+            int b1 = program.peek(length);
+            int b2 = program.peek(length + 1);
             operandValue = b1 | b2 << 8;
             length += 2;
         }
         if (op.flags.contains(DATA) || op.flags.contains(PORT)) {
-            operandValue = Byte.toUnsignedInt(program.peek(length));
+            operandValue = program.peek(length);
             length += 1;
         }
         if (op.flags.contains(OFFSET)) {
-            operandValue = addr + Byte.toUnsignedInt(program.peek(length));
+            operandValue = addr + program.peek(length);
             length += 1;
         }
         // Operands - add into builder
@@ -102,7 +102,7 @@ public class InstructionSetZ80 implements InstructionSet {
             if (ix || iy) {
                 String reg = ix ? "IX" : "IY";
                 if (operandFmt.contains("(HL)")) {
-                    int displacement = Byte.toUnsignedInt(program.peek(length));
+                    int displacement = program.peek(length);
                     operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
                     length++;
                 } else if (operandFmt.contains("HL")) {
