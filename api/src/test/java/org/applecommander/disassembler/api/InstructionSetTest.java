@@ -27,6 +27,12 @@ public class InstructionSetTest {
         test(InstructionSet6502.for6502(), address, code, assembly);
     }
 
+    @ParameterizedTest(name = "65C02[{index}] => {2}")
+    @ArgumentsSource(InstructionSetProvider65C02.class)
+    public void test65C02InstructionSet(int address, byte[] code, String assembly) {
+        test(InstructionSet6502.for65C02(), address, code, assembly);
+    }
+
     void test(InstructionSet instructionSet, int address, byte[] code, String assembly) {
         List<Instruction> instructions = Disassembler.with(code).use(instructionSet).startingAddress(address).decode();
         assertEquals(1, instructions.size());
@@ -44,45 +50,61 @@ public class InstructionSetTest {
         return builder.toString();
     }
 
-    static class InstructionSetProvider6502 implements ArgumentsProvider {
+    static class InstructionSetProvider6502 extends InstructionSetProvider {
+        InstructionSetProvider6502() {
+            super("/6502.txt");
+        }
+    }
+    static class InstructionSetProvider65C02 extends InstructionSetProvider {
+        InstructionSetProvider65C02() {
+            super("/6502.txt", "/65c02.txt");
+        }
+    }
+    static class InstructionSetProvider implements ArgumentsProvider {
         static final Pattern HEX = Pattern.compile("^\\p{XDigit}\\p{XDigit}$", Pattern.CASE_INSENSITIVE);
+
+        final String[] filenames;
+        protected InstructionSetProvider(String... filenames) {
+            this.filenames = filenames;
+        }
 
         @Override
         public Stream<? extends Arguments> provideArguments(ParameterDeclarations parameters, ExtensionContext context) throws Exception {
-            InputStream inputStream = getClass().getResourceAsStream("/6502.txt");
-            assert inputStream != null;
-
             Stream.Builder<Arguments> builder = Stream.builder();
-            int addr = 0;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-                while (true) {
-                    String line = reader.readLine();
-                    if (line == null) break;
-                    // Strip off comments (note: comments must be a full line)
-                    if (line.startsWith("#")) {
-                        continue;
-                    }
-                    line = line.trim();
-                    // Skip empty lines
-                    if (line.isBlank()) continue;
-                    // Set default address (example "300:")
-                    if (line.endsWith(":")) {
-                        addr = Integer.parseInt(line.replace(":", ""), 16);
-                        continue;
-                    }
-                    // Add test case (example "69 44      ADC #$44")
-                    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                    StringBuilder assembly = new StringBuilder();
-                    for (String part : line.split(" ")) {
-                        if (HEX.matcher(part).matches()) {
-                            bytes.write(Integer.parseInt(part, 16));
+            for (String filename : filenames) {
+                InputStream inputStream = getClass().getResourceAsStream(filename);
+                assert inputStream != null;
+
+                int addr = 0;
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                    while (true) {
+                        String line = reader.readLine();
+                        if (line == null) break;
+                        // Strip off comments (note: comments must be a full line)
+                        if (line.startsWith("#")) {
+                            continue;
                         }
-                        else {
-                            if (!assembly.isEmpty()) assembly.append(' ');
-                            assembly.append(part);
+                        line = line.trim();
+                        // Skip empty lines
+                        if (line.isBlank()) continue;
+                        // Set default address (example "300:")
+                        if (line.endsWith(":")) {
+                            addr = Integer.parseInt(line.replace(":", ""), 16);
+                            continue;
                         }
+                        // Add test case (example "69 44      ADC #$44")
+                        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                        StringBuilder assembly = new StringBuilder();
+                        for (String part : line.split(" ")) {
+                            if (HEX.matcher(part).matches()) {
+                                bytes.write(Integer.parseInt(part, 16));
+                            } else {
+                                if (!assembly.isEmpty()) assembly.append(' ');
+                                assembly.append(part);
+                            }
+                        }
+                        builder.add(Arguments.of(addr, bytes.toByteArray(), assembly.toString()));
                     }
-                    builder.add(Arguments.of(addr, bytes.toByteArray(), assembly.toString()));
                 }
             }
             return builder.build();

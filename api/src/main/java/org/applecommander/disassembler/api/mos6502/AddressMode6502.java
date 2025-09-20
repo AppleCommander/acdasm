@@ -94,7 +94,7 @@ public enum AddressMode6502 {
         /* 7- */  REL, INDZPY, INDZP, ZZZ1,  ZPX, ZPX, ZPX, ZP, IMP, ABSY, IMP, ZZZ1, INDABSX, ABSX, ABSX, REL,
         /* 8- */  REL, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, IMP, ZZZ1,     ABS,  ABS,  ABS, REL,
         /* 9- */  REL, INDZPY, INDZP, ZZZ1,  ZPX, ZPX, ZPY, ZP, IMP, ABSY, IMP, ZZZ1,     ABS, ABSX, ABSX, REL,
-        /* A- */  IMM, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, IMP, ZZZ1,     ABS,  ABS,  ABS, REL,
+        /* A- */  IMM, INDZPX,   IMM, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, IMP, ZZZ1,     ABS,  ABS,  ABS, REL,
         /* B- */  REL, INDZPY, INDZP, ZZZ1,  ZPX, ZPX, ZPY, ZP, IMP, ABSY, IMP, ZZZ1,    ABSX, ABSX, ABSY, REL,
         /* C- */  IMM, INDZPX,  ZZZ2, ZZZ1,   ZP,  ZP,  ZP, ZP, IMP,  IMM, IMP,  IMM,     ABS,  ABS,  ABS, REL,
         /* D- */  REL, INDZPY, INDZP, ZZZ1, ZZZ2, ZPX, ZPX, ZP, IMP, ABSY, IMP, ABSY,    ZZZ3, ABSX, ABSX, REL,

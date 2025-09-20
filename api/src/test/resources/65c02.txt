@@ -1,0 +1,34 @@
+# See http://6502.org/tutorials/65c02opcodes.html
+# Note that this is just the "new" opcodes.
+
+# All opcodes assumed to be at $300
+300:
+
+# New instructions
+72 12       ADC ($12)
+32 12       AND ($12)
+D2 12       CMP ($12)
+52 12       EOR ($12)
+B2 12       LDA ($12)
+12 12       ORA ($12)
+F2 12       SBC ($12)
+92 12       STA ($12)
+89 12       BIT #$12
+34 34       BIT $34,X
+3C 78 56    BIT $5678,X
+3A          DEC
+1A          INC
+7C 34 12    JMP ($1234,X)
+80 44       BRA $0346
+DA          PHX
+5A          PHY
+FA          PLX
+7A          PLY
+64 12       STZ $12
+74 12       STZ $12,X
+9C 56 34    STZ $3456
+9E 56 34    STZ $3456,X
+14 12       TRB $12
+1C 56 34    TRB $3456
+04 12       TSB $12
+0C 56 34    TSB $3456
