@@ -75,7 +75,7 @@ public class InstructionSetTest {
                     StringBuilder assembly = new StringBuilder();
                     for (String part : line.split(" ")) {
                         if (HEX.matcher(part).matches()) {
-                            bytes.write(Byte.parseByte(part, 16));
+                            bytes.write(Integer.parseInt(part, 16));
                         }
                         else {
                             if (!assembly.isEmpty()) assembly.append(' ');
