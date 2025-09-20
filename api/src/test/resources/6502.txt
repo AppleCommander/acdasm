@@ -1,0 +1,24 @@
+# See http://6502.org/tutorials/6502opcodes.html
+
+# All opcodes assumed to be at $300
+300:
+
+# ADC
+69 44      ADC #$44
+65 44      ADC $44
+75 44      ADC $44,X
+6d 00 44   ADC $4400
+7d 00 44   ADC $4400,X
+79 00 44   ADC $4400,Y
+61 44      ADC ($44,X)
+71 44      ADC ($44),Y
+
+# AND
+29 44      AND #$44
+25 44      AND $44
+35 44      AND $44,X
+2d 00 44   AND $4400
+3d 00 44   AND $4400,X
+39 00 44   AND $4400,Y
+21 44      AND ($44,X)
+31 44      AND ($44),Y
