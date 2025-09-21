@@ -195,6 +195,34 @@ DD E1           POP IX
 FD E1           POP IY
 
 ### Exchange, Block Transfer and Search Group
+#> EX AF,AF'
+08              EX AF,AF'
+#> EX (SP),HL
+E3              EX (SP),HL
+#> LDI
+ED A0           LDI
+#> LDIR
+ED B0           LDIR
+#> EXX
+D9              EXX
+#> EX (SP),IX
+DD E3           EX (SP),IX
+#> LDD
+ED A8           LDD
+#> LDDR
+ED B8           LDDR
+#> EX (SP),IY
+FD E3           EX (SP),IY
+#> CPI
+ED A1           CPI
+#> CPIR
+ED B1           CPIR
+#> EX DE,HL
+EB              EX DE,HL
+#> CPD
+ED A9           CPD
+#> CPDR
+ED B9           CPDR
 
 ### 8-bit Arithmetic Group
 

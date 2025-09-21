@@ -258,8 +258,8 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b01011111, "LD", "A,R")
                 .add(0b01100111, "RRD")
                 .add(0b01101111, "RLD")
-                .add(0b10100000, "LDI,LDIR,LDD,LDDR", "", RD)
-                .add(0b10100001, "CPI,CPIR,CPD,CPDR", "", RD)
+                .add(0b10100000, "LDI,LDD,LDIR,LDDR", "", RD)
+                .add(0b10100001, "CPI,CPD,CPIR,CPDR", "", RD)
                 .add(0b10100010, "INI,INIR,IND,INDR", "", RD)
                 .add(0b10100011, "OTI,OTIR,OTD,OTDR", "", RD);
         with(CB_OPCODES)
