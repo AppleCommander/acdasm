@@ -190,16 +190,16 @@ public class InstructionSetZ80 implements InstructionSet {
     static {
         with(ROOT_OPCODES)
                 .add(0b00000000, "NOP")
-                .add(0b00000001, "LD", "rp,data", RP2, DATLO, DATHI)
+                .add(0b00000001, "LD", "rp,data", RP2SP, DATLO, DATHI)
                 .add(0b00000010, "LD", "(rp),A", RP1)
-                .add(0b00000011, "INC", "rp", RP2)
+                .add(0b00000011, "INC", "rp", RP2SP)
                 .add(0b00000100, "INC", "ddd", DDD)
                 .add(0b00000101, "DEC", "ddd", DDD)
                 .add(0b00000110, "LD", "ddd,data", DDD, DATA)
                 .add(0b00000111, "RLCA")
-                .add(0b00001001, "ADD", "rp", RP2)
+                .add(0b00001001, "ADD", "rp", RP2SP)
                 .add(0b00001010, "LD", "A,(rp)", RP1)
-                .add(0b00001011, "DEC", "rp", RP2)
+                .add(0b00001011, "DEC", "rp", RP2SP)
                 .add(0b00001000, "EX", "AF,AF'")
                 .add(0b00001111, "RRCA")
                 .add(0b00010000, "DJNZ", "offset", OFFSET)
@@ -207,23 +207,23 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b00011000, "JR", "offset", OFFSET)
                 .add(0b00011111, "RRA")
                 .add(0b00100000, "JR", "cc,offset", CC2, OFFSET)
-                .add(0b00100010, "LD", "add,HL", ADDLO, ADDHI)
+                .add(0b00100010, "LD", "(add),HL", ADDLO, ADDHI)
                 .add(0b00100111, "DAA")
-                .add(0b00101010, "LD", "HL,add", ADDLO, ADDHI)
+                .add(0b00101010, "LD", "HL,(add)", ADDLO, ADDHI)
                 .add(0b00101111, "CPL")
-                .add(0b00110010, "LD", "add,A", ADDLO, ADDHI)
+                .add(0b00110010, "LD", "(add),A", ADDLO, ADDHI)
                 .add(0b00110111, "SCF")
-                .add(0b00111010, "LD", "A,add", ADDLO, ADDHI)
+                .add(0b00111010, "LD", "A,(add)", ADDLO, ADDHI)
                 .add(0b00111111, "CCF")
                 .add(0b01000000, "LD", "ddd,sss", DDD, SSS)
                 .add(0b01110110, "HALT")
                 .add(0b10000000, "ADD,ADC,SUB,SBC,AND,XOR,OR,CP", "sss", SSS, ALU)
                 .add(0b11000000, "RET", "cc", CC3)
-                .add(0b11000001, "POP", "rp", RP2)
+                .add(0b11000001, "POP", "rp", RP2AF)
                 .add(0b11000010, "JP", "cc,add", CC3, ADDLO, ADDHI)
                 .add(0b11000011, "JP", "add", ADDLO, ADDHI)
                 .add(0b11000100, "CALL", "cc,add", CC3, ADDLO, ADDHI)
-                .add(0b11000101, "PUSH", "rp", RP2)
+                .add(0b11000101, "PUSH", "rp", RP2AF)
                 .add(0b11000110, "ADD,ADC,SUB,SBC,AND,XOR,OR,CP", "data", ALU, DATA)
                 .add(0b11000111, "RST", "n", N3)
                 .add(0b11001001, "RET")
@@ -244,14 +244,14 @@ public class InstructionSetZ80 implements InstructionSet {
         with(ED_OPCODES)
                 .add(0b01000000, "IN", "ddd,(C)", DDD)
                 .add(0b01000001, "OUT", "(C),ddd", DDD)
-                .add(0b01000010, "SBC", "HL,rp", RP2)
-                .add(0b01000011, "LD", "(add),rp", ADDLO, ADDHI, RP2)
+                .add(0b01000010, "SBC", "HL,rp", RP2SP)
+                .add(0b01000011, "LD", "(add),rp", ADDLO, ADDHI, RP2SP)
                 .add(0b01000100, "NEG")
                 .add(0b01000101, "RETN")
                 .add(0b01000110, "IM", "n", N2)
                 .add(0b01000111, "LD", "I,A")
-                .add(0b01001010, "ADC", "HL,rp", RP2)
-                .add(0b01001011, "LD", "rp,(add)", ADDLO, ADDHI, RP2)
+                .add(0b01001010, "ADC", "HL,rp", RP2SP)
+                .add(0b01001011, "LD", "rp,(add)", ADDLO, ADDHI, RP2SP)
                 .add(0b01001101, "RETI")
                 .add(0b01001111, "LD", "R,A")
                 .add(0b01010111, "LD", "A,I")
@@ -290,8 +290,17 @@ public class InstructionSetZ80 implements InstructionSet {
         Builder add(int baseOpcode, String mnemonic, String template, Flag... flags) {
             final Set<Flag> f = Set.of(flags);
             // Flags that don't blend with others
-            if (f.contains(RP1) || f.contains(RP2)) {
+            if (f.contains(RP1) || f.contains(RP2SP)) {
                 final String[] rp = { "BC", "DE", "HL", "SP" };
+                final int size = f.contains(RP1) ? 2 : 4;
+                for (int i=0; i<size; i++) {
+                    int opcode = baseOpcode | i<<4;
+                    assert opcodes[opcode] == null;
+                    opcodes[opcode] = new Opcode(opcode, mnemonic, template.replace("rp",rp[i]), flags);
+                }
+            }
+            else if (f.contains(RP2AF)) {
+                final String[] rp = { "BC", "DE", "HL", "AF" };
                 final int size = f.contains(RP1) ? 2 : 4;
                 for (int i=0; i<size; i++) {
                     int opcode = baseOpcode | i<<4;
@@ -409,7 +418,7 @@ public class InstructionSetZ80 implements InstructionSet {
         }
     }
     enum Flag {
-        RP1, RP2,
+        RP1, RP2SP, RP2AF,
         DATLO, DATHI,
         DDD, SSS,
         DATA,
