@@ -59,12 +59,19 @@ public class InstructionSetZ80 implements InstructionSet {
         Opcode op = ROOT_OPCODES[b];
         boolean ix = false;
         boolean iy = false;
+        boolean hasDisplacement = false;
         // Overrides first
         if (op.flags.contains(OVERRIDE)) {
             ix = op.opcode == 0xdd;
             iy = op.opcode == 0xfd;
             b = program.peek(length);
             op = ROOT_OPCODES[b];
+            length++;
+        }
+        // Setup for IX+override and IY+override (manual, uncertain of nice way)
+        if ((ix|iy) && (b == 0x36 || b == 0xcb)) {
+            // (DD|FD) (36|CB) <displacement> <opcode>
+            hasDisplacement = true;
             length++;
         }
         // Alternate prefixes next
@@ -101,7 +108,13 @@ public class InstructionSetZ80 implements InstructionSet {
             // Handle IX / IY
             if (ix || iy) {
                 String reg = ix ? "IX" : "IY";
-                if (operandFmt.contains("(HL)")) {
+                if (operandFmt.contains("(HL)") && hasDisplacement) {
+                    int displacement = program.peek(2);
+                    operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
+                } else if (operandFmt.contains("(HL)") && b == 0xe9) {
+                    // JP (IX) and JP (IY) are special
+                    operandFmt = operandFmt.replace("(HL)", String.format("(%s)", reg));
+                } else if (operandFmt.contains("(HL)")) {
                     int displacement = program.peek(length);
                     operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
                     length++;
