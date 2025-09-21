@@ -454,6 +454,116 @@ ED 56           IM 1
 ED 5E           IM 2
 
 ### Rotate and Shift Group
+#> RLCA
+07              RLCA
+#> RLC r
+CB 07           RLC A
+CB 00           RLC B
+CB 01           RLC C
+CB 02           RLC D
+CB 03           RLC E
+CB 04           RLC H
+CB 05           RLC L
+#> RLC (HL)
+CB 06           RLC (HL)
+#> RLC (IX+d)
+DD CB 44 06     RLC (IX+44H)
+#> RLC (IY+d)
+FD CB 44 06     RLC (IY+44H)
+#> RLA
+17              RLA
+#> RL r
+CB 17           RL A
+CB 10           RL B
+CB 11           RL C
+CB 12           RL D
+CB 13           RL E
+CB 14           RL H
+CB 15           RL L
+#> RL (HL)
+CB 16           RL (HL)
+#> RL (IX+d)
+DD CB 44 16     RL (IX+44H)
+#> RL (IY+d)
+FD CB 44 16     RL (IY+44H)
+#> RRCA
+0F              RRCA
+#> RRC r
+CB 0F           RRC A
+CB 08           RRC B
+CB 09           RRC C
+CB 0A           RRC D
+CB 0B           RRC E
+CB 0C           RRC H
+CB 0D           RRC L
+#> RRC (HL)
+CB 0E           RRC (HL)
+#> RRC (IX+d)
+DD CB 44 0E     RRC (IX+44H)
+#> RRC (IY+d)
+FD CB 44 0E     RRC (IY+44H)
+#> RRA
+1F              RRA
+#> RR r
+CB 1F           RR A
+CB 18           RR B
+CB 19           RR C
+CB 1A           RR D
+CB 1B           RR E
+CB 1C           RR H
+CB 1D           RR L
+#> RR (HL)
+CB 1E           RR (HL)
+#> RR (IX+d)
+DD CB 44 1E     RR (IX+44H)
+#> RR (IY+d)
+FD CB 44 1E     RR (IY+44H)
+#> RLD
+ED 6F           RLD
+#> SLA r
+CB 27           SLA A
+CB 20           SLA B
+CB 21           SLA C
+CB 22           SLA D
+CB 23           SLA E
+CB 24           SLA H
+CB 25           SLA L
+#> SLA (HL)
+CB 26           SLA (HL)
+#> SLA (IX+d)
+DD CB 44 26     SLA (IX+44H)
+#> SLA (IY+d)
+FD CB 44 26     SLA (IY+44H)
+#> RRD
+ED 67           RRD
+#> SRA r
+CB 2F           SRA A
+CB 28           SRA B
+CB 29           SRA C
+CB 2A           SRA D
+CB 2B           SRA E
+CB 2C           SRA H
+CB 2D           SRA L
+#> SRA (HL)
+CB 2E           SRA (HL)
+#> SRA (IX+d)
+DD CB 44 2E     SRA (IX+44H)
+#> SRA (IY+d)
+FD CB 44 2E     SRA (IY+44H)
+#> SRL r
+CB 3F           SRL A
+CB 38           SRL B
+CB 39           SRL C
+CB 3A           SRL D
+CB 3B           SRL E
+CB 3C           SRL H
+CB 3D           SRL L
+#> SRL (HL)
+CB 3E           SRL (HL)
+#> SRL (IX+d)
+DD CB 44 3E     SRL (IX+44H)
+#> SRL (IY+d)
+FD CB 44 3E     SRL (IY+44H)
 
 ### Bit Set, Reset and Test Group
 
