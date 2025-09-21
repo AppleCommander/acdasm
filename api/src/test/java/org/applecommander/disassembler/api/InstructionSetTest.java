@@ -10,10 +10,7 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.support.ParameterDeclarations;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -23,33 +20,33 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class InstructionSetTest {
-    @ParameterizedTest(name = "6502[{index}] => {2}")
+    @ParameterizedTest(name = "6502[{0}] => {3}")
     @ArgumentsSource(InstructionSetProvider6502.class)
-    public void test6502InstructionSet(int address, byte[] code, String assembly) {
+    public void test6502InstructionSet(int lineNumber, int address, byte[] code, String assembly) {
         test(InstructionSet6502.for6502(), address, code, assembly);
     }
 
-    @ParameterizedTest(name = "65C02[{index}] => {2}")
+    @ParameterizedTest(name = "65C02[{0}] => {3}")
     @ArgumentsSource(InstructionSetProvider65C02.class)
-    public void test65C02InstructionSet(int address, byte[] code, String assembly) {
+    public void test65C02InstructionSet(int lineNumber, int address, byte[] code, String assembly) {
         test(InstructionSet6502.for65C02(), address, code, assembly);
     }
 
-    @ParameterizedTest(name = "6502X[{index}] => {2}")
+    @ParameterizedTest(name = "6502X[{0}] => {3}")
     @ArgumentsSource(InstructionSetProvider6502X.class)
-    public void test6502XInstructionSet(int address, byte[] code, String assembly) {
+    public void test6502XInstructionSet(int lineNumber, int address, byte[] code, String assembly) {
         test(InstructionSet6502.for6502withIllegalInstructions(), address, code, assembly);
     }
 
-    @ParameterizedTest(name = "SWEET16[{index}] => {2}")
+    @ParameterizedTest(name = "SWEET16[{0}] => {3}")
     @ArgumentsSource(InstructionSetProviderSWEET16.class)
-    public void testSWEET16InstructionSet(int address, byte[] code, String assembly) {
+    public void testSWEET16InstructionSet(int lineNumber, int address, byte[] code, String assembly) {
         test(InstructionSetSWEET16.forSWEET16(), address, code, assembly);
     }
 
-    @ParameterizedTest(name = "Z80[{index}] => {2}")
+    @ParameterizedTest(name = "Z80[{0}] => {3}")
     @ArgumentsSource(InstructionSetProviderZ80.class)
-    public void testZ80InstructionSet(int address, byte[] code, String assembly) {
+    public void testZ80InstructionSet(int lineNumber, int address, byte[] code, String assembly) {
         test(InstructionSetZ80.forZ80(), address, code, assembly);
     }
 
@@ -111,7 +108,7 @@ public class InstructionSetTest {
                 assert inputStream != null;
 
                 int addr = 0;
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                try (LineNumberReader reader = new LineNumberReader(new InputStreamReader(inputStream))) {
                     while (true) {
                         String line = reader.readLine();
                         if (line == null) break;
@@ -142,7 +139,7 @@ public class InstructionSetTest {
                                 assembly.append(part);
                             }
                         }
-                        builder.add(Arguments.of(addr, bytes.toByteArray(), assembly.toString()));
+                        builder.add(Arguments.of(reader.getLineNumber(), addr, bytes.toByteArray(), assembly.toString()));
                     }
                 }
             }
