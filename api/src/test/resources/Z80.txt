@@ -383,6 +383,49 @@ FD 34 44        INC (IY+44H)
 FD 35 44        DEC (IY+44H)
 
 ### 16-Bit Arithmetic Group
+#> ADD HL,ss
+09              ADD HL,BC
+19              ADD HL,DE
+29              ADD HL,HL
+39              ADD HL,SP
+#> ADD IX,pp
+DD 09           ADD IX,BC
+DD 19           ADD IX,DE
+DD 29           ADD IX,IX
+DD 39           ADD IX,SP
+#> ADD IY,rr
+FD 09           ADD IY,BC
+FD 19           ADD IY,DE
+FD 29           ADD IY,IY
+FD 39           ADD IY,SP
+#> ADC HL,ss
+ED 4A           ADC HL,BC
+ED 5A           ADC HL,DE
+ED 6A           ADC HL,HL
+ED 7A           ADC HL,SP
+#> INC ss
+03              INC BC
+13              INC DE
+23              INC HL
+33              INC SP
+#> INC IX
+DD 23           INC IX
+#> INC IY
+FD 23           INC IY
+#> SBC HL,ss
+ED 42           SBC HL,BC
+ED 52           SBC HL,DE
+ED 62           SBC HL,HL
+ED 72           SBC HL,SP
+#> DEC ss
+0B              DEC BC
+1B              DEC DE
+2B              DEC HL
+3B              DEC SP
+#> DEC IX
+DD 2B           DEC IX
+#> DEC IY
+FD 2B           DEC IY
 
 ### General-Purpose Arithmetic and CPU Control Group
 00              NOP

@@ -197,7 +197,7 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b00000101, "DEC", "ddd", DDD)
                 .add(0b00000110, "LD", "ddd,data", DDD, DATA)
                 .add(0b00000111, "RLCA")
-                .add(0b00001001, "ADD", "rp", RP2SP)
+                .add(0b00001001, "ADD", "HL,rp", RP2SP)
                 .add(0b00001010, "LD", "A,(rp)", RP1)
                 .add(0b00001011, "DEC", "rp", RP2SP)
                 .add(0b00001000, "EX", "AF,AF'")
