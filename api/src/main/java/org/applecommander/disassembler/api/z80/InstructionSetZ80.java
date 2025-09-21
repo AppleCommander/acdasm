@@ -311,7 +311,7 @@ public class InstructionSetZ80 implements InstructionSet {
                 }
             }
             else if (f.contains(CC2) || f.contains(CC3)) {
-                final String[] cc = { "NZ", "Z", "NC", "C", "PO", "PE", "P", "N" };
+                final String[] cc = { "NZ", "Z", "NC", "C", "PO", "PE", "P", "M" };
                 final int size = f.contains(CC2) ? 4 : 8;
                 for (int i=0; i<size; i++) {
                     int opcode = baseOpcode | i<<3;

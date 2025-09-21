@@ -820,7 +820,34 @@ FD CB 44 B6     RES 6,(IY+44H)
 FD CB 44 BE     RES 7,(IY+44H)
 
 ### Jump Group
+#> JP nn
+C3 34 12        JP 1234H
+#> JR e
+18 44           JR 0146H
+#> JP (HL)
+E9              JP (HL)
+#> JP cc,nn
+C2 34 12        JP NZ,1234H
+CA 34 12        JP Z,1234H
+D2 34 12        JP NC,1234H
+DA 34 12        JP C,1234H
+E2 34 12        JP PO,1234H
+EA 34 12        JP PE,1234H
+F2 34 12        JP P,1234H
+FA 34 12        JP M,1234H
+#> JR C,e
+38 44           JR C,0146H
+#> JP (IX)
+DD E9           JP (IX)
+#> JR NC,e
+30 44           JR NC,0146H
+#> JP (IY)
+FD E9           JP (IY)
+#> JR Z,e
+28 44           JR Z,0146H
+#> DJNZ e
 10 44           DJNZ 0146H
+#> JR NZ,e
 20 44           JR NZ,0146H
 
 ### Call and Return Group
