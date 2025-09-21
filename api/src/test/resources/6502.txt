@@ -1,0 +1,217 @@
+# See http://6502.org/tutorials/6502opcodes.html
+
+# All opcodes assumed to be at $300
+300:
+
+# ADC (ADd with Carry)
+69 44       ADC #$44
+65 44       ADC $44
+75 44       ADC $44,X
+6D 00 44    ADC $4400
+7D 00 44    ADC $4400,X
+79 00 44    ADC $4400,Y
+61 44       ADC ($44,X)
+71 44       ADC ($44),Y
+
+# AND (bitwise AND with accumulator)
+29 44       AND #$44
+25 44       AND $44
+35 44       AND $44,X
+2D 00 44    AND $4400
+3D 00 44    AND $4400,X
+39 00 44    AND $4400,Y
+21 44       AND ($44,X)
+31 44       AND ($44),Y
+
+# ASL (Arithmetic Shift Left)
+0A          ASL
+06 44       ASL $44
+16 44       ASL $44,X
+0E 00 44    ASL $4400
+1E 00 44    ASL $4400,X
+
+# BIT (test BITs)
+24 44       BIT $44
+2C 00 44    BIT $4400
+
+# Branch Instructions
+10 44       BPL $0346
+30 44       BMI $0346
+50 44       BVC $0346
+70 44       BVS $0346
+90 44       BCC $0346
+B0 44       BCS $0346
+D0 44       BNE $0346
+F0 44       BEQ $0346
+
+# BRK (BReaK)
+00          BRK
+
+# CMP (CoMPare accumulator)
+C9 44       CMP #$44
+C5 44       CMP $44
+D5 44       CMP $44,X
+CD 00 44    CMP $4400
+DD 00 44    CMP $4400,X
+D9 00 44    CMP $4400,Y
+C1 44       CMP ($44,X)
+D1 44       CMP ($44),Y
+
+# CPX (ComPare X register)
+E0 44       CPX #$44
+E4 44       CPX $44
+EC 00 44    CPX $4400
+
+# CPY (ComPare Y register)
+C0 44       CPY #$44
+C4 44       CPY $44
+CC 00 44    CPY $4400
+
+# DEC (DECrement memory)
+C6 44       DEC $44
+D6 44       DEC $44,X
+CE 00 44    DEC $4400
+DE 00 44    DEC $4400,X
+
+# EOR (bitwise Exclusive OR)
+49 44       EOR #$44
+45 44       EOR $44
+55 44       EOR $44,X
+4D 00 44    EOR $4400
+5D 00 44    EOR $4400,X
+59 00 44    EOR $4400,Y
+41 44       EOR ($44,X)
+51 44       EOR ($44),Y
+
+# Flag (Processor Status) Instructions
+18          CLC
+38          SEC
+58          CLI
+78          SEI
+B8          CLV
+D8          CLD
+F8          SED
+
+# INC (INCrement memory)
+E6 44       INC $44
+F6 44       INC $44,X
+EE 00 44    INC $4400
+FE 00 44    INC $4400,X
+
+# JMP (JuMP)
+4C 97 55    JMP $5597
+6C 97 55    JMP ($5597)
+
+# JSR (Jump to SubRoutine)
+20 97 55    JSR $5597
+
+# LDA (LoaD Accumulator)
+A9 44       LDA #$44
+A5 44       LDA $44
+B5 44       LDA $44,X
+AD 00 44    LDA $4400
+BD 00 44    LDA $4400,X
+B9 00 44    LDA $4400,Y
+A1 44       LDA ($44,X)
+B1 44       LDA ($44),Y
+
+# LDX (LoaD X register)
+A2 44       LDX #$44
+A6 44       LDX $44
+B6 44       LDX $44,Y
+AE 00 44    LDX $4400
+BE 00 44    LDX $4400,Y
+
+# LDY (LoaD Y register)
+A0 44       LDY #$44
+A4 44       LDY $44
+B4 44       LDY $44,X
+AC 00 44    LDY $4400
+BC 00 44    LDY $4400,X
+
+# LSR (Logical Shift Right)
+4A          LSR
+46 44       LSR $44
+56 44       LSR $44,X
+4E 00 44    LSR $4400
+5E 00 44    LSR $4400,X
+
+# NOP (No OPeration)
+EA          NOP
+
+# ORA (bitwise OR with Accumulator)
+09 44       ORA #$44
+05 44       ORA $44
+15 44       ORA $44,X
+0D 00 44    ORA $4400
+1D 00 44    ORA $4400,X
+19 00 44    ORA $4400,Y
+01 44       ORA ($44,X)
+11 44       ORA ($44),Y
+
+# Register Instructions
+AA          TAX
+8A          TXA
+CA          DEX
+E8          INX
+A8          TAY
+98          TYA
+88          DEY
+C8          INY
+
+# ROL (ROtate Left)
+2A          ROL
+26 44       ROL $44
+36 44       ROL $44,X
+2E 00 44    ROL $4400
+3E 00 44    ROL $4400,X
+
+# ROR (ROtate Right)
+6A          ROR
+66 44       ROR $44
+76 44       ROR $44,X
+6E 00 44    ROR $4400
+7E 00 44    ROR $4400,X
+
+# RTI (ReTurn from Interrupt)
+40          RTI
+
+# RTS (ReTurn from Subroutine)
+60          RTS
+
+# SBC (SuBtract with Carry)
+E9 44       SBC #$44
+E5 44       SBC $44
+F5 44       SBC $44,X
+ED 00 44    SBC $4400
+FD 00 44    SBC $4400,X
+F9 00 44    SBC $4400,Y
+E1 44       SBC ($44,X)
+F1 44       SBC ($44),Y
+
+# STA (STore Accumulator)
+85 44       STA $44
+95 44       STA $44,X
+8D 00 44    STA $4400
+9D 00 44    STA $4400,X
+99 00 44    STA $4400,Y
+81 44       STA ($44,X)
+91 44       STA ($44),Y
+
+# Stack Instructions
+9A          TXS
+BA          TSX
+48          PHA
+68          PLA
+08          PHP
+28          PLP
+
+# STX (STore X register)
+86 44       STX $44
+96 44       STX $44,Y
+8E 00 44    STX $4400
+
+# STY (STore Y register)
+84 44       STY $44
+94 44       STY $44,X
+8C 00 44    STY $4400

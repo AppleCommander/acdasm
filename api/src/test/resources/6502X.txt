@@ -1,0 +1,156 @@
+# Illegal opcodes
+# See https://www.masswerk.at/6502/6502_instruction_set.html#illegals
+
+# All opcodes assumed to be at $300
+300:
+
+# ALR (ASR) - AND oper + LSR
+4B 44       ALR #$44
+
+# ANC - AND oper + set C as ASL
+0B 44       ANC #$44
+
+# ANC (ANC2) - AND oper + set C as ROL
+2B 44       ANC #$44
+
+# ANE (XAA) - OR X + AND oper (Highly unstable, do not use)
+8B 44       ANE #$44
+
+# ARR - AND oper + ROR
+6B 44       ARR #$44
+
+# DCP (DCM) - DEC oper + CMP oper
+C7 44       DCP $44
+D7 44       DCP $44,X
+CF 34 12    DCP $1234
+DF 34 12    DCP $1234,X
+DB 34 12    DCP $1234,Y
+C3 44       DCP ($44,X)
+D3 44       DCP ($44),Y
+
+# ISC (ISB, INS) - INC oper + SBC oper
+E7 44       ISC $44
+F7 44       ISC $44,X
+EF 34 12    ISC $1234
+FF 34 12    ISC $1234,X
+FB 34 12    ISC $1234,Y
+E3 44       ISC ($44,X)
+F3 44       ISC ($44),Y
+
+# LAS (LAR) - LDA/TSX oper
+BB 34 12    LAS $1234,Y
+
+# LAX - LDA oper + LDX oper
+A7 44       LAX $44
+B7 44       LAX $44,Y
+AF 34 12    LAX $1234
+BF 34 12    LAX $1234,Y
+A3 44       LAX ($44,X)
+B3 44       LAX ($44),Y
+
+# LXA (LAX immediate) - Store * AND oper in A and X (Highly unstable, involves a 'magic' constant, see ANE)
+AB 44       LXA #$44
+
+# RLA - ROL oper + AND oper
+27 44       RLA $44
+37 44       RLA $44,X
+2F 34 12    RLA $1234
+3F 34 12    RLA $1234,X
+3B 34 12    RLA $1234,Y
+23 44       RLA ($44,X)
+33 44       RLA ($44),Y
+
+# RRA - ROR oper + ADC oper
+67 44       RRA $44
+77 44       RRA $44,X
+6F 34 12    RRA $1234
+7F 34 12    RRA $1234,X
+7B 34 12    RRA $1234,Y
+63 44       RRA ($44,X)
+73 44       RRA ($44),Y
+
+# SAX (AXS, AAX) - A and X are put on the bus at the same time (resulting effectively in an AND operation) and stored in M
+87 44       SAX $44
+97 44       SAX $44,Y
+8F 34 12    SAX $1234
+83 44       SAX ($44,X)
+
+# SBX (AXS, SAX) - CMP and DEX at once, sets flags like CMP
+CB 44       SBX #$44
+
+# SHA (AHX, AXA) - Stores A AND X AND (high-byte of addr. + 1) at addr - unstable
+9F 34 12    SHA $1234,Y
+93 44       SHA ($44),Y
+
+# SHX (A11, SXA, XAS) - Stores X AND (high-byte of addr. + 1) at addr - unstable
+9E 34 12    SHX $1234,Y
+
+# SHY (A11, SYA, SAY) - Stores Y AND (high-byte of addr. + 1) at addr - unstable
+9C 34 12    SHY $1234,X
+
+# SLO (ASO) - ASL oper + ORA oper
+07 44       SLO $44
+17 44       SLO $44,X
+0F 34 12    SLO $1234
+1F 34 12    SLO $1234,X
+1B 34 12    SLO $1234,Y
+03 44       SLO ($44,X)
+13 44       SLO ($44),Y
+
+# SRE (LSE) - LSR oper + EOR oper
+47 44       SRE $44
+57 44       SRE $44,X
+4F 34 12    SRE $1234
+5F 34 12    SRE $1234,X
+5B 34 12    SRE $1234,Y
+43 44       SRE ($44,X)
+53 44       SRE ($44),Y
+
+# TAS (XAS, SHS) - Puts A AND X in SP and stores A AND X AND (high-byte of addr. + 1) at addr - unstable
+9B 34 12    TAS $1234,Y
+
+# USBC (SBC) - SBC oper + NOP
+EB 44       USBC #$44
+
+# NOPs (including DOP, TOP) - Instructions effecting in 'no operations' in various address modes. Operands are ignored.
+1A          NOP
+3A          NOP
+5A          NOP
+7A          NOP
+DA          NOP
+FA          NOP
+80 44       NOP #$44
+82 44       NOP #$44
+89 44       NOP #$44
+C2 44       NOP #$44
+E2 44       NOP #$44
+04 44       NOP $44
+44 44       NOP $44
+64 44       NOP $44
+14 44       NOP $44,X
+34 44       NOP $44,X
+54 44       NOP $44,X
+74 44       NOP $44,X
+D4 44       NOP $44,X
+F4 44       NOP $44,X
+0C 34 12    NOP $1234
+1C 34 12    NOP $1234,X
+3C 34 12    NOP $1234,X
+5C 34 12    NOP $1234,X
+7C 34 12    NOP $1234,X
+DC 34 12    NOP $1234,X
+FC 34 12    NOP $1234,X
+
+# JAM (KIL, HLT)
+02          JAM
+12          JAM
+22          JAM
+32          JAM
+42          JAM
+52          JAM
+62          JAM
+72          JAM
+92          JAM
+B2          JAM
+D2          JAM
+F2          JAM
