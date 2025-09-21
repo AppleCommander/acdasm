@@ -229,9 +229,9 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b11001001, "RET")
                 .add(0b11001011, "CB", "", PREFIX)
                 .add(0b11001101, "CALL", "add", ADDLO, ADDHI)
-                .add(0b11010011, "OUT", "port,A", PORT)
+                .add(0b11010011, "OUT", "(port),A", PORT)
                 .add(0b11011001, "EXX")
-                .add(0b11011011, "IN", "A,port", PORT)
+                .add(0b11011011, "IN", "A,(port)", PORT)
                 .add(0b11011101, "IX", "", OVERRIDE)
                 .add(0b11100011, "EX", "(SP),HL")
                 .add(0b11101001, "JP", "(HL)")
@@ -262,8 +262,8 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b01101111, "RLD")
                 .add(0b10100000, "LDI,LDD,LDIR,LDDR", "", RD)
                 .add(0b10100001, "CPI,CPD,CPIR,CPDR", "", RD)
-                .add(0b10100010, "INI,INIR,IND,INDR", "", RD)
-                .add(0b10100011, "OTI,OTIR,OTD,OTDR", "", RD);
+                .add(0b10100010, "INI,IND,INIR,INDR", "", RD)
+                .add(0b10100011, "OUTI,OUTD,OTIR,OTDR", "", RD);
         with(CB_OPCODES)
                 .add(0b00000000, "RLC", "sss", SSS)
                 .add(0b00001000, "RRC", "sss", SSS)

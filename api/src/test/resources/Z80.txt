@@ -888,3 +888,40 @@ F7              RST 30H
 FF              RST 38H
 
 ### Input and Output Group
+#> IN A,(n)
+DB 44           IN A,(44H)
+#> OUT (n),A
+D3 44           OUT (44H),A
+#> IN r,(C)
+ED 40           IN B,(C)
+ED 48           IN C,(C)
+ED 50           IN D,(C)
+ED 58           IN E,(C)
+ED 60           IN H,(C)
+ED 68           IN L,(C)
+ED 78           IN A,(C)
+#> OUT (C),r
+ED 41           OUT (C),B
+ED 49           OUT (C),C
+ED 51           OUT (C),D
+ED 59           OUT (C),E
+ED 61           OUT (C),H
+ED 69           OUT (C),L
+ED 79           OUT (C),A
+#> INI
+ED A2           INI
+#> OUTI
+ED A3           OUTI
+#> INIR
+ED B2           INIR
+#> OTIR
+ED B3           OTIR
+#> IND
+ED AA           IND
+#> OUTD
+ED AB           OUTD
+#> INDR
+ED BA           INDR
+#> OTDR
+ED BB           OTDR
+
