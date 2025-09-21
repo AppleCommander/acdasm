@@ -428,7 +428,30 @@ DD 2B           DEC IX
 FD 2B           DEC IY
 
 ### General-Purpose Arithmetic and CPU Control Group
+#> DAA
+27              DAA
+#> CPL
+2F              CPL
+#> NEG
+ED 44           NEG
+#> CCF
+3F              CCF
+#> SCF
+37              SCF
+#> NOP
 00              NOP
+#> HALT
+76              HALT
+#> DI
+F3              DI
+#> EI
+FB              EI
+#> IM 0
+ED 46           IM 0
+#> IM 1
+ED 56           IM 1
+#> IM 2
+ED 5E           IM 2
 
 ### Rotate and Shift Group
 

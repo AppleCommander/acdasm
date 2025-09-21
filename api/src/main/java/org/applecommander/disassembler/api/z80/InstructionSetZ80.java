@@ -248,7 +248,9 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b01000011, "LD", "(add),rp", ADDLO, ADDHI, RP2SP)
                 .add(0b01000100, "NEG")
                 .add(0b01000101, "RETN")
-                .add(0b01000110, "IM", "n", N2)
+                .add(0b01000110, "IM", "0")
+                .add(0b01010110, "IM", "1")
+                .add(0b01011110, "IM", "2")
                 .add(0b01000111, "LD", "I,A")
                 .add(0b01001010, "ADC", "HL,rp", RP2SP)
                 .add(0b01001011, "LD", "rp,(add)", ADDLO, ADDHI, RP2SP)
@@ -323,13 +325,6 @@ public class InstructionSetZ80 implements InstructionSet {
                     int opcode = baseOpcode | n;
                     assert opcodes[opcode] == null;
                     opcodes[opcode] = new Opcode(opcode, mnemonic, template.replace("n",String.format("%02XH",n)), flags);
-                }
-            }
-            else if (f.contains(N2)) {
-                for (int i=0; i<4; i++) {
-                    int opcode = baseOpcode | i<<3;
-                    assert opcodes[opcode] == null;
-                    opcodes[opcode] = new Opcode(opcode, mnemonic, template.replace("n", Integer.toString(i)), flags);
                 }
             }
             else if (f.contains(RD)) {
@@ -427,7 +422,7 @@ public class InstructionSetZ80 implements InstructionSet {
         CC3, CC2,
         PORT,
         ALU,
-        N2, N3,
+        N3,
         PREFIX,
         OVERRIDE,
         RD,
