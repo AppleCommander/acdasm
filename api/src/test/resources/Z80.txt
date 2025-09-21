@@ -225,6 +225,162 @@ ED A9           CPD
 ED B9           CPDR
 
 ### 8-bit Arithmetic Group
+#> ADD A,r
+87              ADD A,A
+80              ADD A,B
+81              ADD A,C
+82              ADD A,D
+83              ADD A,E
+84              ADD A,H
+85              ADD A,L
+#> ADC A,r
+8F              ADC A,A
+88              ADC A,B
+89              ADC A,C
+8A              ADC A,D
+8B              ADC A,E
+8C              ADC A,H
+8D              ADC A,L
+#> SUB r
+97              SUB A,A
+90              SUB A,B
+91              SUB A,C
+92              SUB A,D
+93              SUB A,E
+94              SUB A,H
+95              SUB A,L
+#> SBC A,r
+9F              SBC A,A
+98              SBC A,B
+99              SBC A,C
+9A              SBC A,D
+9B              SBC A,E
+9C              SBC A,H
+9D              SBC A,L
+#> AND r
+A7              AND A,A
+A0              AND A,B
+A1              AND A,C
+A2              AND A,D
+A3              AND A,E
+A4              AND A,H
+A5              AND A,L
+#> OR r
+B7              OR A,A
+B0              OR A,B
+B1              OR A,C
+B2              OR A,D
+B3              OR A,E
+B4              OR A,H
+B5              OR A,L
+#> XOR r
+AF              XOR A,A
+A8              XOR A,B
+A9              XOR A,C
+AA              XOR A,D
+AB              XOR A,E
+AC              XOR A,H
+AD              XOR A,L
+#> CP r
+BF              CP A,A
+B8              CP A,B
+B9              CP A,C
+BA              CP A,D
+BB              CP A,E
+BC              CP A,H
+BD              CP A,L
+#> INC r
+3C              INC A
+04              INC B
+0C              INC C
+14              INC D
+1C              INC E
+24              INC H
+2C              INC L
+#> DEC r
+3D              DEC A
+05              DEC B
+0D              DEC C
+15              DEC D
+1D              DEC E
+25              DEC H
+2D              DEC L
+#> ADD A,n
+C6 44           ADD A,44H
+#> ADC A,n
+CE 44           ADC A,44H
+#> SUB n
+D6 44           SUB A,44H
+#> SBC A,n
+DE 44           SBC A,44H
+#> AND n
+E6 44           AND A,44H
+#> OR n
+F6 44           OR A,44H
+#> XOR n
+EE 44           XOR A,44H
+#> CP n
+FE 44           CP A,44H
+#> ADD A,(HL)
+86              ADD A,(HL)
+#> ADC A,(HL)
+8E              ADC A,(HL)
+#> SUB (HL)
+96              SUB A,(HL)
+#> SBC A,(HL)
+9E              SBC A,(HL)
+#> AND (HL)
+A6              AND A,(HL)
+#> OR (HL)
+B6              OR A,(HL)
+#> XOR (HL)
+AE              XOR A,(HL)
+#> CP (HL)
+BE              CP A,(HL)
+#> INC (HL)
+34              INC (HL)
+#> DEC (HL)
+35              DEC (HL)
+#> ADD A,(IX+d)
+DD 86 44        ADD A,(IX+44H)
+#> ADC A,(IX+d)
+DD 8E 44        ADC A,(IX+44H)
+#> SUB (IX+d)
+DD 96 44        SUB A,(IX+44H)
+#> SBC A,(IX+d)
+DD 9E 44        SBC A,(IX+44H)
+#> AND (IX+d)
+DD A6 44        AND A,(IX+44H)
+#> OR (IX+d)
+DD B6 44        OR A,(IX+44H)
+#> XOR (IX+d)
+DD AE 44        XOR A,(IX+44H)
+#> CP (IX+d)
+DD BE 44        CP A,(IX+44H)
+#> INC (IX+d)
+DD 34 44        INC (IX+44H)
+#> DEC (IX+d)
+DD 35 44        DEC (IX+44H)
+#> ADD A,(IY+d)
+FD 86 44        ADD A,(IY+44H)
+#> ADC A,(IY+d)
+FD 8E 44        ADC A,(IY+44H)
+#> SUB (IY+d)
+FD 96 44        SUB A,(IY+44H)
+#> SBC A,(IY+d)
+FD 9E 44        SBC A,(IY+44H)
+#> AND (IY+d)
+FD A6 44        AND A,(IY+44H)
+#> OR (IY+d)
+FD B6 44        OR A,(IY+44H)
+#> XOR (IY+d)
+FD AE 44        XOR A,(IY+44H)
+#> CP (IY+d)
+FD BE 44        CP A,(IY+44H)
+#> INC (IY+d)
+FD 34 44        INC (IY+44H)
+#> DEC (IY+d)
+FD 35 44        DEC (IY+44H)
 
 ### 16-Bit Arithmetic Group
 
