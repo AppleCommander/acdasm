@@ -1,0 +1,143 @@
+# See https://jnz.dk/z80/instgroups.html
+
+# Each instruction assumes address 100H
+100:
+
+# 8-bit Load Group
+#> LD r,r'
+7F          LD A,A
+47          LD B,A
+4F          LD C,A
+57          LD D,A
+5F          LD E,A
+67          LD H,A
+6F          LD L,A
+78          LD A,B
+40          LD B,B
+48          LD C,B
+50          LD D,B
+58          LD E,B
+60          LD H,B
+68          LD L,B
+79          LD A,C
+41          LD B,C
+49          LD C,C
+51          LD D,C
+59          LD E,C
+61          LD H,C
+69          LD L,C
+7A          LD A,D
+42          LD B,D
+4A          LD C,D
+52          LD D,D
+5A          LD E,D
+62          LD H,D
+6A          LD L,D
+7B          LD A,E
+43          LD B,E
+4B          LD C,E
+53          LD D,E
+5B          LD E,E
+63          LD H,E
+6B          LD L,E
+7C          LD A,H
+44          LD B,H
+4C          LD C,H
+54          LD D,H
+5C          LD E,H
+64          LD H,H
+6C          LD L,H
+7D          LD A,L
+45          LD B,L
+4D          LD C,L
+55          LD D,L
+5D          LD E,L
+65          LD H,L
+6D          LD L,L
+#> LD r,n
+3E 44       LD A,44H
+06 44       LD B,44H
+0E 44       LD C,44H
+16 44       LD D,44H
+1E 44       LD E,44H
+26 44       LD H,44H
+2E 44       LD L,44H
+#> LD r,(HL)
+7E          LD A,(HL)
+46          LD B,(HL)
+4E          LD C,(HL)
+56          LD D,(HL)
+5E          LD E,(HL)
+66          LD H,(HL)
+6E          LD L,(HL)
+#> LD r,(IX+d)
+DD 7E 44    LD A,(IX+44H)
+DD 46 44    LD B,(IX+44H)
+DD 4E 44    LD C,(IX+44H)
+DD 56 44    LD D,(IX+44H)
+DD 5E 44    LD E,(IX+44H)
+DD 66 44    LD H,(IX+44H)
+DD 6E 44    LD L,(IX+44H)
+#> LD r,(IY+d)
+FD 7E 44    LD A,(IY+44H)
+FD 46 44    LD B,(IY+44H)
+FD 4E 44    LD C,(IY+44H)
+FD 56 44    LD D,(IY+44H)
+FD 5E 44    LD E,(IY+44H)
+FD 66 44    LD H,(IY+44H)
+FD 6E 44    LD L,(IY+44H)
+#> LD (HL),r
+77          LD (HL),A
+70          LD (HL),B
+71          LD (HL),C
+72          LD (HL),D
+73          LD (HL),E
+74          LD (HL),H
+75          LD (HL),L
+#> LD (IX+d),r
+DD 77 44    LD (IX+44H),A
+DD 70 44    LD (IX+44H),B
+DD 71 44    LD (IX+44H),C
+DD 72 44    LD (IX+44H),D
+DD 73 44    LD (IX+44H),E
+DD 74 44    LD (IX+44H),H
+DD 75 44    LD (IX+44H),L
+#> LD (IY+d),r
+FD 77 44    LD (IY+44H),A
+FD 70 44    LD (IY+44H),B
+FD 71 44    LD (IY+44H),C
+FD 72 44    LD (IY+44H),D
+FD 73 44    LD (IY+44H),E
+FD 74 44    LD (IY+44H),H
+FD 75 44    LD (IY+44H),L
+
+# HERE!
+02          LD (BC),A
+12          LD (DE),A
+
+# 16-bit Load Group
+01 34 12    LD BC,1234H
+11 34 12    LD DE,1234H
+21 34 12    LD HL,1234H
+31 34 12    LD SP,1234H
+
+# Exchange, Block Transfer and Search Group
+
+# 8-bit Arithmetic Group
+
+# 16-Bit Arithmetic Group
+
+# General-Purpose Arithmetic and CPU Control Group
+00          NOP
+
+# Rotate and Shift Group
+
+# Bit Set, Reset and Test Group
+
+# Jump Group
+10 44       DJNZ 0146H
+20 44       JR NZ,0146H
+
+# Call and Return Group
+
+# Input and Output Group

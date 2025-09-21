@@ -2,6 +2,7 @@ package org.applecommander.disassembler.api;
 
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
+import org.applecommander.disassembler.api.z80.InstructionSetZ80;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -46,6 +47,12 @@ public class InstructionSetTest {
         test(InstructionSetSWEET16.forSWEET16(), address, code, assembly);
     }
 
+    @ParameterizedTest(name = "Z80[{index}] => {2}")
+    @ArgumentsSource(InstructionSetProviderZ80.class)
+    public void testZ80InstructionSet(int address, byte[] code, String assembly) {
+        test(InstructionSetZ80.forZ80(), address, code, assembly);
+    }
+
     void test(InstructionSet instructionSet, int address, byte[] code, String assembly) {
         List<Instruction> instructions = Disassembler.with(code).use(instructionSet).startingAddress(address).decode();
         assertEquals(1, instructions.size());
@@ -81,6 +88,11 @@ public class InstructionSetTest {
     static class InstructionSetProviderSWEET16 extends InstructionSetProvider {
         InstructionSetProviderSWEET16() {
             super("/SWEET16.txt");
+        }
+    }
+    static class InstructionSetProviderZ80 extends InstructionSetProvider {
+        InstructionSetProviderZ80() {
+            super("/Z80.txt");
         }
     }
     static class InstructionSetProvider implements ArgumentsProvider {

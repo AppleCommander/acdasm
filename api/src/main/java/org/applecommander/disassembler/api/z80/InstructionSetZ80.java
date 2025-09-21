@@ -93,7 +93,7 @@ public class InstructionSetZ80 implements InstructionSet {
             length += 1;
         }
         if (op.flags.contains(OFFSET)) {
-            operandValue = addr + program.peek(length);
+            operandValue = addr + program.peek(length) + 2;
             length += 1;
         }
         // Operands - add into builder
@@ -125,7 +125,7 @@ public class InstructionSetZ80 implements InstructionSet {
             else if (operandFmt.contains("offset")) {
                 builder.opAddress(operandFmt.replace("offset", "%s"), "%04XH", operandValue);
             }
-            else {
+            else if (!operandFmt.isEmpty()) {
                 builder.opValue(operandFmt);
             }
         }
