@@ -134,10 +134,11 @@ public class Main implements Callable<Integer> {
     }
     
     public void emitWithLabels(Instruction instruction) {
+        int bytesPerLine = cpuSelection.instructionSet.suggestedBytesPerInstruction();
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
-        for (int i=0; i<cpuSelection.instructionSet.suggestedBytesPerInstruction(); i++) {
+        for (int i=0; i<bytesPerLine; i++) {
             if (i >= code.length) {
                 System.out.print("   ");
             } else {
@@ -155,12 +156,24 @@ public class Main implements Callable<Integer> {
                 }
             })
             .collect(Collectors.joining(",")));
+
+        if (code.length >= bytesPerLine) {
+            for (int i=bytesPerLine; i<code.length; i++) {
+                if (i % bytesPerLine == 0) {
+                    if (i > bytesPerLine) System.out.println();
+                    System.out.printf("%04X- ", instruction.address()+i);
+                }
+                System.out.printf("%02X ", code[i]);
+            }
+            System.out.println();
+        }
     }
     public void emitRaw(Instruction instruction) {
+        int bytesPerLine = cpuSelection.instructionSet.suggestedBytesPerInstruction();
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
-        for (int i=0; i<cpuSelection.instructionSet.suggestedBytesPerInstruction(); i++) {
+        for (int i=0; i<bytesPerLine; i++) {
             if (i >= code.length) {
                 System.out.print("   ");
             } else {
@@ -170,6 +183,17 @@ public class Main implements Callable<Integer> {
         System.out.printf(" %-5.5s ", instruction.mnemonic());
         System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
                 .collect(Collectors.joining(",")));
+
+        if (code.length >= bytesPerLine) {
+            for (int i=bytesPerLine; i<code.length; i++) {
+                if (i % bytesPerLine == 0) {
+                    if (i > bytesPerLine) System.out.println();
+                    System.out.printf("%04X- ", instruction.address()+i);
+                }
+                System.out.printf("%02X ", code[i]);
+            }
+            System.out.println();
+        }
     }
     
     private static class CpuSelection {
