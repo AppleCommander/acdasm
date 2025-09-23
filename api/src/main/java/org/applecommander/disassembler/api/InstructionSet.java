@@ -21,7 +21,7 @@ import java.util.List;
 public interface InstructionSet {
     int defaultStartAddress();
     List<String> defaultLibraryLabels();
-    Instruction decode(Program program);
+    List<Instruction> decode(Program program);
     int suggestedBytesPerInstruction();
     List<OpcodeTable> opcodeTables();
 

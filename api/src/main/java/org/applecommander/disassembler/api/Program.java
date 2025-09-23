@@ -48,6 +48,9 @@ public class Program {
     public int peekUnsignedByte(int n) {
         return offset+n < code.length ? Byte.toUnsignedInt(code[offset+n]) : 0;
     }
+    public int peekUnsignedShort(int n) {
+        return peekUnsignedByte(n) | peekUnsignedByte(n+1) << 8;
+    }
     public int peekSignedByte(int n) {
         return offset+n < code.length ? code[offset+n] : 0;
     }

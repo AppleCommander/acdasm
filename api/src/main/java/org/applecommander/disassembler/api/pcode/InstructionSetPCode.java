@@ -4,6 +4,7 @@ import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,59 +46,45 @@ public class InstructionSetPCode implements InstructionSet {
     }
 
     @Override
-    public Instruction decode(Program program) {
-        if (program.currentOffset() >= program.length()+program.mark()+8) {
-            int w = program.peekUnsignedByte(0) | program.peekUnsignedByte(1) << 8;
-            return Instruction.at(program.currentAddress())
-                    .mnemonic("J/T")
-                    .opAddress("%s", "$%04X", program.currentAddress()-w)
-                    .code(program.read(2))
-                    .get();
-        }
-        int length = 1;
-        int op = program.peekUnsignedByte();
-        Opcode opcode = OPCODES[op];
+    public List<Instruction> decode(Program program) {
+        List<Instruction> assembly = new ArrayList<>();
+        while (program.hasMore()) {
+            if (program.currentOffset() >= program.length() + program.mark() + 8) {
+                int w = program.peekUnsignedByte(0) | program.peekUnsignedByte(1) << 8;
+                assembly.add(Instruction.at(program.currentAddress())
+                        .mnemonic("J/T")
+                        .opAddress("%s", "$%04X", program.currentAddress() - w)
+                        .code(program.read(2))
+                        .get());
+                continue;
+            }
+            int length = 1;
+            int op = program.peekUnsignedByte();
+            Opcode opcode = OPCODES[op];
 
-        Instruction.Builder builder = Instruction.at(program.currentAddress());
-        builder.mnemonic(opcode.mnemonic);
-        // Note that we usually have only one, but sometimes we have DB,B or UB,B or UB,UB
-        // ... so this makes us read it in the right order
-        for (Flag flag : opcode.flags) {
-            switch (flag) {
-                case UB, DB -> {
-                    int ub = program.peekUnsignedByte(length++);
-                    builder.opValue("%d", ub);
-                }
-                case SB -> {
-                    int sb = program.peekSignedByte(length++);
-                    if (sb < 0) {
-                        if (sb < program.mark()) program.mark(sb);
-                        int offset = program.length() + sb + 8;    // account for attribute table
-                        int w = program.getUnsignedByte(offset) | program.getUnsignedByte(offset+1) << 8;
-                        sb = program.baseAddress() + offset - w;
+            Instruction.Builder builder = Instruction.at(program.currentAddress());
+            builder.mnemonic(opcode.mnemonic);
+            // Note that we usually have only one, but sometimes we have DB,B or UB,B or UB,UB
+            // ... so this makes us read it in the right order
+            for (Flag flag : opcode.flags) {
+                switch (flag) {
+                    case UB, DB -> {
+                        int ub = program.peekUnsignedByte(length++);
+                        builder.opValue("%d", ub);
                     }
-                    else {
-                        sb = program.currentAddress() + sb + 2;
+                    case SB -> {
+                        int sb = program.peekSignedByte(length++);
+                        if (sb < 0) {
+                            if (sb < program.mark()) program.mark(sb);
+                            int offset = program.length() + sb + 8;    // account for attribute table
+                            int w = program.getUnsignedByte(offset) | program.getUnsignedByte(offset + 1) << 8;
+                            sb = program.baseAddress() + offset - w;
+                        } else {
+                            sb = program.currentAddress() + sb + 2;
+                        }
+                        builder.opAddress("%s", "$%04X", sb);
                     }
-                    builder.opAddress("%s", "$%04X", sb);
-                }
-                case B -> {
-                    // Range 0..127
-                    int b = program.peekUnsignedByte(length++);
-                    if (b > 127) {
-                        // Range 128..32768
-                        b = (b & 0x7f) << 8 | program.peekUnsignedByte(length++);
-                    }
-                    builder.opValue("%d", b);
-                }
-                case W -> {
-                    int w = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                    builder.opValue("%d", w);
-                }
-                case TYPE -> {
-                    int t = program.peekUnsignedByte(length++);
-                    builder.mnemonic(String.format("%s%s", opcode.mnemonic, TYPE_NAMES[t]));
-                    if (t == 10 || t == 12) {
+                    case B -> {
                         // Range 0..127
                         int b = program.peekUnsignedByte(length++);
                         if (b > 127) {
@@ -106,61 +93,79 @@ public class InstructionSetPCode implements InstructionSet {
                         }
                         builder.opValue("%d", b);
                     }
-                }
-                case CSP -> {
-                    int csp = program.peekUnsignedByte(length++);
-                    if (csp > 0 && csp < CSP_PROCS.length) {
-                        builder.mnemonic(CSP_PROCS[csp]);
-                    }
-                    else {
-                        builder.opValue("%d", csp);
-                    }
-                }
-                case LDC -> {
-                    int ub = program.peekUnsignedByte(length++);
-                    builder.opValue("%d", ub);
-                    // Word alignment
-                    if ((program.currentAddress() + length & 1) == 1) length++;
-                    for (int i=0; i<ub; i++) {
+                    case W -> {
                         int w = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                        builder.opValue("%w", w);
+                        builder.opValue("%d", w);
                     }
-                }
-                case LPA, LSA -> {
-                    // Both are documented as <chars> but other docs suggest LPA may be bytes.
-                    int ub = program.peekUnsignedByte(length++);
-                    StringBuilder sb = new StringBuilder();
-                    for (int i=0; i<ub; i++) {
-                        int ch = program.peekUnsignedByte(length++);
-                        sb.append((char)ch);
+                    case TYPE -> {
+                        int t = program.peekUnsignedByte(length++);
+                        builder.mnemonic(String.format("%s%s", opcode.mnemonic, TYPE_NAMES[t]));
+                        if (t == 10 || t == 12) {
+                            // Range 0..127
+                            int b = program.peekUnsignedByte(length++);
+                            if (b > 127) {
+                                // Range 128..32768
+                                b = (b & 0x7f) << 8 | program.peekUnsignedByte(length++);
+                            }
+                            builder.opValue("%d", b);
+                        }
                     }
-                    builder.opValue("'%s'", sb.toString());
-                }
-                case XJP -> {
-                    // Word alignment
-                    if ((program.currentAddress() + length & 1) == 1) length++;
-                    int w1 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                    int w2 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                    builder.opValue("%d..%d", w1, w2);
-                    int w3 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                    // TODO setup UJP here?
-                    builder.opValue("%02X %02X", w3 & 0xff, w3 >> 8);
-                    // TODO setup self-relative addresses
-                    for (int i=w1; i<=w2; i++) {
-                        int w = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;;
-                        builder.opAddress("%s", "%04X", w);
+                    case CSP -> {
+                        int csp = program.peekUnsignedByte(length++);
+                        if (csp > 0 && csp < CSP_PROCS.length) {
+                            builder.mnemonic(CSP_PROCS[csp]);
+                        } else {
+                            builder.opValue("%d", csp);
+                        }
                     }
+                    case LDC -> {
+                        int ub = program.peekUnsignedByte(length++);
+                        builder.opValue("%d", ub);
+                        // Word alignment
+                        if ((program.currentAddress() + length & 1) == 1) length++;
+                        for (int i = 0; i < ub; i++) {
+                            int w = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
+                            builder.opValue("%w", w);
+                        }
+                    }
+                    case LPA, LSA -> {
+                        // Both are documented as <chars> but other docs suggest LPA may be bytes.
+                        int ub = program.peekUnsignedByte(length++);
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < ub; i++) {
+                            int ch = program.peekUnsignedByte(length++);
+                            sb.append((char) ch);
+                        }
+                        builder.opValue("'%s'", sb.toString());
+                    }
+                    case XJP -> {
+                        // Word alignment
+                        if ((program.currentAddress() + length & 1) == 1) length++;
+                        int w1 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
+                        int w2 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
+                        builder.opValue("%d..%d", w1, w2);
+                        int w3 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
+                        // TODO setup UJP here?
+                        builder.opValue("%02X %02X", w3 & 0xff, w3 >> 8);
+                        // TODO setup self-relative addresses
+                        for (int i = w1; i <= w2; i++) {
+                            int w = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
+                            ;
+                            builder.opAddress("%s", "%04X", w);
+                        }
+                    }
+                    default -> throw new RuntimeException("Unexpected flag type: " + flag);
                 }
-                default -> throw new RuntimeException("Unexpected flag type: " + flag);
             }
-        }
-        // Catch stuff with constants
-        opcode.impliedValue.ifPresent(n -> {
-            builder.opValue("%d", n);
-        });
+            // Catch stuff with constants
+            opcode.impliedValue.ifPresent(n -> {
+                builder.opValue("%d", n);
+            });
 
-        builder.code(program.read(length));
-        return builder.get();
+            builder.code(program.read(length));
+            assembly.add(builder.get());
+        }
+        return assembly;
     }
 
     @Override

@@ -20,6 +20,7 @@ import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class InstructionSet6502 implements InstructionSet {
@@ -59,23 +60,31 @@ public class InstructionSet6502 implements InstructionSet {
     }
 
     @Override
-    public Instruction decode(Program program) {
+    public List<Instruction> decode(Program program) {
+        List<Instruction> assembly = new ArrayList<>();
+        while (program.hasMore()) {
+            assembly.add(decodeOne(program));
+        }
+        return assembly;
+    }
+
+    /**
+     * Single instruction decoding has been extracted to support the 6502/SWEET16 switching mode.
+     */
+    public Instruction decodeOne(Program program) {
         int op = program.peekUnsignedByte();
-        
+
         AddressMode6502 addressMode = addressModes[op];
         Opcode6502 opcode = opcodes[op];
 
-        int currentAddress = program.currentAddress();  // Need capture before read
-        byte[] code = program.read(addressMode.getInstructionLength());
-
-        int value = switch (code.length) {
-            case 3 -> Byte.toUnsignedInt(code[1]) + Byte.toUnsignedInt(code[2])*256;
+        int currentAddress = program.currentAddress();
+        int value = switch (addressMode.getInstructionLength()) {
+            case 3 -> program.peekUnsignedShort(1);
             case 2 -> {
                 if (addressMode.isOperandRelativeAddress()) {
-                    yield (currentAddress + 2 + code[1]) & 0xffff;   // allow sign extension
-                }
-                else {
-                    yield Byte.toUnsignedInt(code[1]);
+                    yield (currentAddress + 2 + program.peekSignedByte(1)) & 0xffff;   // allow sign extension
+                } else {
+                    yield program.peekUnsignedByte(1);
                 }
 
             }
@@ -83,12 +92,13 @@ public class InstructionSet6502 implements InstructionSet {
         };
 
         Instruction.Builder builder = Instruction.at(currentAddress)
-                .code(code)
+                .code(program.read(addressMode.getInstructionLength()))
                 .mnemonic(opcode.getMnemonic());
         // Notes: ZZZ{1,2,3} are length of the invalid opcode. Picked most simple representation; not meant to be
         //        technically correct.
         switch (addressMode) {
-            case ACC, IMP, ZZZ1 -> {}
+            case ACC, IMP, ZZZ1 -> {
+            }
             case ABS, REL, ZZZ3 -> builder.opAddress("%s", "$%04X", value);
             case ABSX -> builder.opAddress("%s", "$%04X", value).opValue("X");
             case ABSY -> builder.opAddress("%s", "$%04X", value).opValue("Y");

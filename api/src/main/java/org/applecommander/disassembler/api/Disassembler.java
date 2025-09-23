@@ -19,7 +19,6 @@ package org.applecommander.disassembler.api;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,8 +52,6 @@ public class Disassembler {
     }
     
     private List<Instruction> decode(Map<Integer,String> labels) {
-        List<Instruction> assembly = new ArrayList<>();
-
         // Create a subset of the original code and adjust starting address accordingly
         if (bytesToSkip > 0 || bytesToDecode > 0) {
             byte[] dest = new byte[bytesToDecode == 0 ? code.length - bytesToSkip : bytesToDecode];
@@ -64,18 +61,16 @@ public class Disassembler {
         }
 
         Program program = new Program(code,startAddress);
+        List<Instruction> assembly = instructionSet.decode(program);
 
         // Gather all the instructions and identify all target addresses
-        while (program.hasMore()) {
-            Instruction instruction = instructionSet.decode(program);
-            assembly.add(instruction);
-
+        assembly.forEach(instruction -> {
             instruction.addressRef().flatMap(Instruction.Operand::address).ifPresent(address -> {
                 if ((address >= startAddress) && (address < startAddress + code.length)) {
                     labels.computeIfAbsent(address, addr -> String.format("L%04X", addr));
                 }
             });
-        }
+        });
 
         return assembly;
     }

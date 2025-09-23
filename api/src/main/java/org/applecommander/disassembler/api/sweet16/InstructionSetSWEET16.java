@@ -20,6 +20,7 @@ import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class InstructionSetSWEET16 implements InstructionSet {
@@ -47,7 +48,18 @@ public class InstructionSetSWEET16 implements InstructionSet {
     }
 
     @Override
-    public Instruction decode(Program program) {
+    public List<Instruction> decode(Program program) {
+        List<Instruction> assembly = new ArrayList<>();
+        while (program.hasMore()) {
+            assembly.add(decodeOne(program));
+        }
+        return assembly;
+    }
+
+    /**
+     * Single instruction decoding has been extracted to support the 6502/SWEET16 switching mode.
+     */
+    public Instruction decodeOne(Program program) {
         int op = program.peekUnsignedByte();
         int low = op & 0x0f;
         int high = (op & 0xf0) >> 4;
@@ -57,8 +69,7 @@ public class InstructionSetSWEET16 implements InstructionSet {
         if (high == 0) {
             opcode = OpcodeSWEET16.NON_REGISTER_OPS[low];
             addressMode = AddressModeSWEET16.NON_REGISTER_OPS[low];
-        }
-        else {
+        } else {
             opcode = OpcodeSWEET16.REGISTER_OPS[high];
             addressMode = AddressModeSWEET16.REGISTER_OPS[high];
         }
@@ -67,30 +78,30 @@ public class InstructionSetSWEET16 implements InstructionSet {
             addressMode = AddressModeSWEET16.IMP;
         }
 
-        int currentAddress = program.currentAddress();  // Need capture before read
-        byte[] code = program.read(addressMode.getInstructionLength());
-        int value = switch (code.length) {
-            case 3 -> Byte.toUnsignedInt(code[1]) + Byte.toUnsignedInt(code[2])*256;
+        int currentAddress = program.currentAddress();
+        int value = switch (addressMode.getInstructionLength()) {
+            case 3 -> program.peekUnsignedShort(1);
             case 2 -> {
                 if (addressMode.isOperandRelativeAddress()) {
-                    yield (currentAddress + 2 + code[1]) & 0xffff;   // allow sign extension
+                    yield (currentAddress + 2 + program.peekSignedByte(1)) & 0xffff;   // allow sign extension
+                } else {
+                    yield program.peekUnsignedByte(1);
                 }
-                else {
-                    yield Byte.toUnsignedInt(code[1]);
-                }
+
             }
             default -> 0;
         };
 
         Instruction.Builder builder = Instruction.at(currentAddress)
-                .code(code)
+                .code(program.read(addressMode.getInstructionLength()))
                 .mnemonic(opcode.getMnemonic());
-        switch(addressMode) {
+        switch (addressMode) {
             case CON -> builder.opValue("R%d", low).opValue("#$%04X", value);
             case DIR -> builder.opValue("R%d", low);
             case IND -> builder.opValue("@R%d", low);
             case BRA -> builder.opAddress("%s", "$%04X", value);
-            case IMP -> {}
+            case IMP -> {
+            }
         }
         return builder.get();
     }

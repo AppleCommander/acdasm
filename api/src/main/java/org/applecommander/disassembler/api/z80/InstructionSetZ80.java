@@ -20,6 +20,7 @@ import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -50,102 +51,100 @@ public class InstructionSetZ80 implements InstructionSet {
     }
 
     @Override
-    public Instruction decode(Program program) {
-        int addr = program.currentAddress();
-        Instruction.Builder builder = Instruction.at(addr);
+    public List<Instruction> decode(Program program) {
+        List<Instruction> assembly = new ArrayList<>();
+        while (program.hasMore()) {
+            int addr = program.currentAddress();
+            Instruction.Builder builder = Instruction.at(addr);
 
-        int length = 1;
-        int b = program.peekUnsignedByte();
-        Opcode op = ROOT_OPCODES[b];
-        boolean ix = false;
-        boolean iy = false;
-        boolean hasDisplacement = false;
-        // Overrides first
-        if (op.flags.contains(OVERRIDE)) {
-            ix = op.opcode == 0xdd;
-            iy = op.opcode == 0xfd;
-            b = program.peekUnsignedByte(length);
-            op = ROOT_OPCODES[b];
-            length++;
-        }
-        // Setup for IX+override and IY+override (manual, uncertain of nice way)
-        if ((ix|iy) && (b == 0x36 || b == 0xcb)) {
-            // (DD|FD) (36|CB) <displacement> <opcode>
-            hasDisplacement = true;
-            length++;
-        }
-        // Alternate prefixes next
-        if (op.flags.contains(PREFIX)) {
-            b = program.peekUnsignedByte(length);
-            if (op.opcode() == 0xed) {
-                op = ED_OPCODES[b];
+            int length = 1;
+            int b = program.peekUnsignedByte();
+            Opcode op = ROOT_OPCODES[b];
+            boolean ix = false;
+            boolean iy = false;
+            boolean hasDisplacement = false;
+            // Overrides first
+            if (op.flags.contains(OVERRIDE)) {
+                ix = op.opcode == 0xdd;
+                iy = op.opcode == 0xfd;
+                b = program.peekUnsignedByte(length);
+                op = ROOT_OPCODES[b];
+                length++;
             }
-            else if (op.opcode() == 0xcb) {
-                op = CB_OPCODES[b];
+            // Setup for IX+override and IY+override (manual, uncertain of nice way)
+            if ((ix | iy) && (b == 0x36 || b == 0xcb)) {
+                // (DD|FD) (36|CB) <displacement> <opcode>
+                hasDisplacement = true;
+                length++;
             }
-            length++;
-        }
-        builder.mnemonic(op.mnemonic);
-        // Operands - figure out extra bytes
-        int operandValue = 0;
-        if ((op.flags.contains(DATLO) && op.flags.contains(DATHI))
-                || (op.flags.contains(ADDLO) && op.flags.contains(ADDHI))) {
-            int b1 = program.peekUnsignedByte(length);
-            int b2 = program.peekUnsignedByte(length + 1);
-            operandValue = b1 | b2 << 8;
-            length += 2;
-        }
-        if (op.flags.contains(DATA) || op.flags.contains(PORT)) {
-            operandValue = program.peekUnsignedByte(length);
-            length += 1;
-        }
-        if (op.flags.contains(OFFSET)) {
-            operandValue = addr + program.peekUnsignedByte(length) + 2;
-            length += 1;
-        }
-        // Operands - add into builder
-        for (String operandFmt : op.fmts) {
-            // Handle IX / IY
-            if (ix || iy) {
-                String reg = ix ? "IX" : "IY";
-                if (operandFmt.contains("(HL)") && hasDisplacement) {
-                    int displacement = program.peekUnsignedByte(2);
-                    operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
-                } else if (operandFmt.contains("(HL)") && b == 0xe9) {
-                    // JP (IX) and JP (IY) are special
-                    operandFmt = operandFmt.replace("(HL)", String.format("(%s)", reg));
-                } else if (operandFmt.contains("(HL)")) {
-                    int displacement = program.peekUnsignedByte(length);
-                    operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
-                    length++;
-                } else if (operandFmt.contains("HL")) {
-                    operandFmt = operandFmt.replace("HL", reg);
+            // Alternate prefixes next
+            if (op.flags.contains(PREFIX)) {
+                b = program.peekUnsignedByte(length);
+                if (op.opcode() == 0xed) {
+                    op = ED_OPCODES[b];
+                } else if (op.opcode() == 0xcb) {
+                    op = CB_OPCODES[b];
+                }
+                length++;
+            }
+            builder.mnemonic(op.mnemonic);
+            // Operands - figure out extra bytes
+            int operandValue = 0;
+            if ((op.flags.contains(DATLO) && op.flags.contains(DATHI))
+                    || (op.flags.contains(ADDLO) && op.flags.contains(ADDHI))) {
+                int b1 = program.peekUnsignedByte(length);
+                int b2 = program.peekUnsignedByte(length + 1);
+                operandValue = b1 | b2 << 8;
+                length += 2;
+            }
+            if (op.flags.contains(DATA) || op.flags.contains(PORT)) {
+                operandValue = program.peekUnsignedByte(length);
+                length += 1;
+            }
+            if (op.flags.contains(OFFSET)) {
+                operandValue = addr + program.peekUnsignedByte(length) + 2;
+                length += 1;
+            }
+            // Operands - add into builder
+            for (String operandFmt : op.fmts) {
+                // Handle IX / IY
+                if (ix || iy) {
+                    String reg = ix ? "IX" : "IY";
+                    if (operandFmt.contains("(HL)") && hasDisplacement) {
+                        int displacement = program.peekUnsignedByte(2);
+                        operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
+                    } else if (operandFmt.contains("(HL)") && b == 0xe9) {
+                        // JP (IX) and JP (IY) are special
+                        operandFmt = operandFmt.replace("(HL)", String.format("(%s)", reg));
+                    } else if (operandFmt.contains("(HL)")) {
+                        int displacement = program.peekUnsignedByte(length);
+                        operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
+                        length++;
+                    } else if (operandFmt.contains("HL")) {
+                        operandFmt = operandFmt.replace("HL", reg);
+                    }
+                }
+                // Setup the operand
+                if (operandFmt.contains("data") && op.flags.contains(DATLO)) {
+                    builder.opValue(operandFmt.replace("data", "%04XH"), operandValue);
+                } else if (operandFmt.contains("add")) {
+                    builder.opAddress(operandFmt.replace("add", "%s"), "%04XH", operandValue);
+                } else if (operandFmt.contains("port")) {
+                    builder.opValue(operandFmt.replace("port", "%02XH"), operandValue);
+                } else if (operandFmt.contains("data") && op.flags.contains(DATA)) {
+                    builder.opValue(operandFmt.replace("data", "%02XH"), operandValue);
+                } else if (operandFmt.contains("offset")) {
+                    builder.opAddress(operandFmt.replace("offset", "%s"), "%04XH", operandValue);
+                } else if (!operandFmt.isEmpty()) {
+                    builder.opValue(operandFmt);
                 }
             }
-            // Setup the operand
-            if (operandFmt.contains("data") && op.flags.contains(DATLO)) {
-                builder.opValue(operandFmt.replace("data", "%04XH"), operandValue);
-            }
-            else if (operandFmt.contains("add")) {
-                builder.opAddress(operandFmt.replace("add", "%s"), "%04XH", operandValue);
-            }
-            else if (operandFmt.contains("port")) {
-                builder.opValue(operandFmt.replace("port", "%02XH"), operandValue);
-            }
-            else if (operandFmt.contains("data") && op.flags.contains(DATA)) {
-                builder.opValue(operandFmt.replace("data", "%02XH"), operandValue);
-            }
-            else if (operandFmt.contains("offset")) {
-                builder.opAddress(operandFmt.replace("offset", "%s"), "%04XH", operandValue);
-            }
-            else if (!operandFmt.isEmpty()) {
-                builder.opValue(operandFmt);
-            }
+            //
+            //return new InstructionZ80(addr, op.mnemonic, operandFmt, operandValue, program.read(length));
+            builder.code(program.read(length));
+            assembly.add(builder.get());
         }
-        //
-        //return new InstructionZ80(addr, op.mnemonic, operandFmt, operandValue, program.read(length));
-        builder.code(program.read(length));
-        return builder.get();
+        return assembly;
     }
 
     @Override
