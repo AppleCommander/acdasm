@@ -48,70 +48,38 @@ public class InstructionSetPCode implements InstructionSet {
     @Override
     public List<Instruction> decode(Program program) {
         List<Instruction> assembly = new ArrayList<>();
-        while (program.hasMore()) {
-            if (program.currentOffset() >= program.length() + program.mark() + 8) {
-                int w = program.peekUnsignedByte(0) | program.peekUnsignedByte(1) << 8;
-                assembly.add(Instruction.at(program.currentAddress())
+        Procedure procedure = new Procedure(program);
+        while (procedure.hasMore()) {
+            if (procedure.currentOffset() >= procedure.jumpTable()) {
+                assembly.add(Instruction.at(procedure.currentAddress())
                         .mnemonic("J/T")
-                        .opAddress("%s", "$%04X", program.currentAddress() - w)
-                        .code(program.read(2))
+                        .opAddress("%s", "$%04X", procedure.currentAddress() - procedure.readW())
+                        .code(procedure.bytesRead())
                         .get());
                 continue;
             }
-            int length = 1;
-            int op = program.peekUnsignedByte();
-            Opcode opcode = OPCODES[op];
 
-            Instruction.Builder builder = Instruction.at(program.currentAddress());
+            Opcode opcode = OPCODES[procedure.readUB()];
+
+            Instruction.Builder builder = Instruction.at(procedure.currentAddress());
             builder.mnemonic(opcode.mnemonic);
             // Note that we usually have only one, but sometimes we have DB,B or UB,B or UB,UB
             // ... so this makes us read it in the right order
             for (Flag flag : opcode.flags) {
                 switch (flag) {
-                    case UB, DB -> {
-                        int ub = program.peekUnsignedByte(length++);
-                        builder.opValue("%d", ub);
-                    }
-                    case SB -> {
-                        int sb = program.peekSignedByte(length++);
-                        if (sb < 0) {
-                            if (sb < program.mark()) program.mark(sb);
-                            int offset = program.length() + sb + 8;    // account for attribute table
-                            int w = program.getUnsignedByte(offset) | program.getUnsignedByte(offset + 1) << 8;
-                            sb = program.baseAddress() + offset - w;
-                        } else {
-                            sb = program.currentAddress() + sb + 2;
-                        }
-                        builder.opAddress("%s", "$%04X", sb);
-                    }
-                    case B -> {
-                        // Range 0..127
-                        int b = program.peekUnsignedByte(length++);
-                        if (b > 127) {
-                            // Range 128..32768
-                            b = (b & 0x7f) << 8 | program.peekUnsignedByte(length++);
-                        }
-                        builder.opValue("%d", b);
-                    }
-                    case W -> {
-                        int w = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                        builder.opValue("%d", w);
-                    }
+                    case UB, DB -> builder.opValue("%d", procedure.readUB());
+                    case SB -> builder.opAddress("%s", "$%04X", procedure.readSBOffset());
+                    case B -> builder.opValue("%d", procedure.readB());
+                    case W -> builder.opValue("%d", procedure.readW());
                     case TYPE -> {
-                        int t = program.peekUnsignedByte(length++);
+                        int t = procedure.readUB();
                         builder.mnemonic(String.format("%s%s", opcode.mnemonic, TYPE_NAMES[t]));
                         if (t == 10 || t == 12) {
-                            // Range 0..127
-                            int b = program.peekUnsignedByte(length++);
-                            if (b > 127) {
-                                // Range 128..32768
-                                b = (b & 0x7f) << 8 | program.peekUnsignedByte(length++);
-                            }
-                            builder.opValue("%d", b);
+                            builder.opValue("%d", procedure.readB());
                         }
                     }
                     case CSP -> {
-                        int csp = program.peekUnsignedByte(length++);
+                        int csp = procedure.readUB();
                         if (csp > 0 && csp < CSP_PROCS.length) {
                             builder.mnemonic(CSP_PROCS[csp]);
                         } else {
@@ -119,39 +87,33 @@ public class InstructionSetPCode implements InstructionSet {
                         }
                     }
                     case LDC -> {
-                        int ub = program.peekUnsignedByte(length++);
+                        int ub = procedure.readUB();
                         builder.opValue("%d", ub);
-                        // Word alignment
-                        if ((program.currentAddress() + length & 1) == 1) length++;
+                        procedure.alignToWord();
                         for (int i = 0; i < ub; i++) {
-                            int w = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                            builder.opValue("%w", w);
+                            builder.opValue("%w", procedure.readW());
                         }
                     }
                     case LPA, LSA -> {
                         // Both are documented as <chars> but other docs suggest LPA may be bytes.
-                        int ub = program.peekUnsignedByte(length++);
+                        int ub = procedure.readUB();
                         StringBuilder sb = new StringBuilder();
                         for (int i = 0; i < ub; i++) {
-                            int ch = program.peekUnsignedByte(length++);
-                            sb.append((char) ch);
+                            sb.append((char) procedure.readUB());
                         }
                         builder.opValue("'%s'", sb.toString());
                     }
                     case XJP -> {
-                        // Word alignment
-                        if ((program.currentAddress() + length & 1) == 1) length++;
-                        int w1 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                        int w2 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
+                        procedure.alignToWord();
+                        int w1 = procedure.readW();
+                        int w2 = procedure.readW();
                         builder.opValue("%d..%d", w1, w2);
-                        int w3 = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                        // TODO setup UJP here?
-                        builder.opValue("%02X %02X", w3 & 0xff, w3 >> 8);
+                        procedure.readUB();                         // UJP per documentation
+                        int w3addr = procedure.readSBOffset() + 6;  // adjusted for XJP itself
+                        builder.opValue("UJP $%04X", w3addr);
                         // TODO setup self-relative addresses
                         for (int i = w1; i <= w2; i++) {
-                            int w = program.peekUnsignedByte(length++) | program.peekUnsignedByte(length++) << 8;
-                            ;
-                            builder.opAddress("%s", "%04X", w);
+                            builder.opAddress("%s", "%04X", procedure.readW());
                         }
                     }
                     default -> throw new RuntimeException("Unexpected flag type: " + flag);
@@ -162,7 +124,7 @@ public class InstructionSetPCode implements InstructionSet {
                 builder.opValue("%d", n);
             });
 
-            builder.code(program.read(length));
+            builder.code(procedure.bytesRead());
             assembly.add(builder.get());
         }
         return assembly;
@@ -187,6 +149,66 @@ public class InstructionSetPCode implements InstructionSet {
             return op.impliedValue
                      .map(integer -> String.format("%s %d", op.mnemonic, integer))
                      .orElseGet(() -> op.mnemonic);
+        }
+    }
+
+    private static class Procedure {
+        private final Program program;
+        private int length;
+        private int jumpTable;
+
+        public Procedure(Program program) {
+            this.program = program;
+        }
+        public boolean hasMore() {
+            return program.hasMore();
+        }
+        public int jumpTable() {
+            return program.length() + jumpTable + 8;    // account for attribute table
+        }
+        public void alignToWord() {
+            if ((program.currentAddress() + length & 1) == 1) {
+                length++;
+            }
+        }
+        public int currentOffset() {
+            return program.currentOffset();
+        }
+        public int currentAddress() {
+            return program.currentAddress();
+        }
+        public byte[] bytesRead() {
+            try {
+                return program.read(length);
+            } finally {
+                length = 0;
+            }
+        }
+        public int readUB() {
+            return program.peekUnsignedByte(length++);
+        }
+        public int readSBOffset() {
+            int sb = program.peekSignedByte(length++);
+            if (sb < 0) {
+                jumpTable = Math.min(jumpTable, sb);
+                int offset = program.length() + sb + 8;    // account for attribute table
+                int w = program.getUnsignedByte(offset) | program.getUnsignedByte(offset + 1) << 8;
+                return program.baseAddress() + offset - w;
+            } else {
+                return program.currentAddress() + sb + 2;
+            }
+        }
+        public int readW() {
+            return readUB() | readUB() << 8;
+        }
+        public int readB() {
+            // Range 0..127
+            int b = readUB();
+            if (b > 127) {
+                // Range 128..32768
+                b = (b & 0x7f) << 8 | readUB();
+            }
+            return b;
         }
     }
 
