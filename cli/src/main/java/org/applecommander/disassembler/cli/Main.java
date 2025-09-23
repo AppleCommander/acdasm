@@ -51,6 +51,10 @@ public class Main implements Callable<Integer> {
     @Option(names = { "--offset" }, converter = IntegerTypeConverter.class, 
             description = "Skip offset bytes into binary before disassembling.")
     private int offset;
+
+    @Option(names = { "-n", "--length" }, converter = IntegerTypeConverter.class,
+            description = "Disassembly length bytes.")
+    private int length;
     
     @Option(names = { "--labels" }, negatable = true, description = "Show or hide labels.")
     public void selectLabelEmitter(boolean flag) {
@@ -58,7 +62,7 @@ public class Main implements Callable<Integer> {
     }
     private Consumer<Instruction> emitter = this::emitWithLabels;
     
-    @Option(names = { "--library" }, split = ",", paramLabel = "<library>", description =
+    @Option(names = { "-l", "--library" }, split = ",", paramLabel = "<library>", description =
             "Select which library labels to load. Use 'All' to select all. Each CPU has a default set " +
             "(most are 'All' except Z80).  Options are: 'F800', 'Applesoft', 'ProDOS', 'DOS', 'DISKII'. " +
             "'None' may also be used to turn library labels off.")
@@ -83,7 +87,6 @@ public class Main implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         final int MAX_ADDRESS = 0xFFFF;
-        final int MAX_OFFSET = 0xFFFF;
 
         if (startAddress == -1) {
             startAddress = cpuSelection.instructionSet.defaultStartAddress();
@@ -94,12 +97,15 @@ public class Main implements Callable<Integer> {
             throw new IllegalArgumentException(errormsg);
         }
 
-        if (offset < 0 || offset > MAX_OFFSET) {
-            String errormsg = String.format("offset(%d) is out of range(0-%d).", offset, MAX_OFFSET);
-            throw new IllegalArgumentException(errormsg);
+        final byte[] code = Files.readAllBytes(file);
+        if (length == 0) {
+            length = code.length;
         }
 
-        final byte[] code = Files.readAllBytes(file);
+        if (offset < 0 || offset > code.length) {
+            String errormsg = String.format("offset(%d) is out of range(0-%d).", offset, code.length);
+            throw new IllegalArgumentException(errormsg);
+        }
 
         // CPU library labels defaults:
         if (libraries == null) {
@@ -117,6 +123,7 @@ public class Main implements Callable<Integer> {
         List<Instruction> assembly = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
+                .bytesToDecode(length)
                 .use(cpuSelection.get())
                 .section(libraries)
                 .decode(labels);

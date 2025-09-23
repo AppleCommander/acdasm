@@ -44,6 +44,7 @@ public class Disassembler {
 
     private int startAddress;
     private int bytesToSkip;
+    private int bytesToDecode;
     private byte[] code;
     private InstructionSet instructionSet;
 
@@ -53,20 +54,20 @@ public class Disassembler {
     
     private List<Instruction> decode(Map<Integer,String> labels) {
         List<Instruction> assembly = new ArrayList<>();
+
+        // Create a subset of the original code and adjust starting address accordingly
+        if (bytesToSkip > 0 || bytesToDecode > 0) {
+            byte[] dest = new byte[bytesToDecode == 0 ? code.length - bytesToSkip : bytesToDecode];
+            System.arraycopy(code, bytesToSkip, dest, 0, dest.length);
+            code = dest;
+            startAddress+= bytesToSkip;
+        }
+
         Program program = new Program(code,startAddress);
 
-        // 1st pass: Gather all the instruction builders and identify all target addresses
+        // Gather all the instructions and identify all target addresses
         while (program.hasMore()) {
-            Instruction instruction = null;
-            if (program.currentOffset() < bytesToSkip) {
-                instruction = Instruction.at(program.currentAddress())
-                        .mnemonic("---")
-                        .code(program.read(1))
-                        .get();
-            }
-            else {
-                instruction = instructionSet.decode(program);
-            }
+            Instruction instruction = instructionSet.decode(program);
             assembly.add(instruction);
 
             instruction.addressRef().flatMap(Instruction.Operand::address).ifPresent(address -> {
@@ -114,6 +115,10 @@ public class Disassembler {
         }
         public Builder bytesToSkip(int skip) {
             disassembler.bytesToSkip = skip;
+            return this;
+        }
+        public Builder bytesToDecode(int length) {
+            disassembler.bytesToDecode = length;
             return this;
         }
         public Builder use(InstructionSet instructionSet) {
