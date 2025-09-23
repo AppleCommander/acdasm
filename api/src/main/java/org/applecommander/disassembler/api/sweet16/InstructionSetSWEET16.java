@@ -48,7 +48,7 @@ public class InstructionSetSWEET16 implements InstructionSet {
 
     @Override
     public Instruction decode(Program program) {
-        int op = program.peek();
+        int op = program.peekUnsignedByte();
         int low = op & 0x0f;
         int high = (op & 0xf0) >> 4;
 

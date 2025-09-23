@@ -55,7 +55,7 @@ public class InstructionSetZ80 implements InstructionSet {
         Instruction.Builder builder = Instruction.at(addr);
 
         int length = 1;
-        int b = program.peek();
+        int b = program.peekUnsignedByte();
         Opcode op = ROOT_OPCODES[b];
         boolean ix = false;
         boolean iy = false;
@@ -64,7 +64,7 @@ public class InstructionSetZ80 implements InstructionSet {
         if (op.flags.contains(OVERRIDE)) {
             ix = op.opcode == 0xdd;
             iy = op.opcode == 0xfd;
-            b = program.peek(length);
+            b = program.peekUnsignedByte(length);
             op = ROOT_OPCODES[b];
             length++;
         }
@@ -76,7 +76,7 @@ public class InstructionSetZ80 implements InstructionSet {
         }
         // Alternate prefixes next
         if (op.flags.contains(PREFIX)) {
-            b = program.peek(length);
+            b = program.peekUnsignedByte(length);
             if (op.opcode() == 0xed) {
                 op = ED_OPCODES[b];
             }
@@ -90,17 +90,17 @@ public class InstructionSetZ80 implements InstructionSet {
         int operandValue = 0;
         if ((op.flags.contains(DATLO) && op.flags.contains(DATHI))
                 || (op.flags.contains(ADDLO) && op.flags.contains(ADDHI))) {
-            int b1 = program.peek(length);
-            int b2 = program.peek(length + 1);
+            int b1 = program.peekUnsignedByte(length);
+            int b2 = program.peekUnsignedByte(length + 1);
             operandValue = b1 | b2 << 8;
             length += 2;
         }
         if (op.flags.contains(DATA) || op.flags.contains(PORT)) {
-            operandValue = program.peek(length);
+            operandValue = program.peekUnsignedByte(length);
             length += 1;
         }
         if (op.flags.contains(OFFSET)) {
-            operandValue = addr + program.peek(length) + 2;
+            operandValue = addr + program.peekUnsignedByte(length) + 2;
             length += 1;
         }
         // Operands - add into builder
@@ -109,13 +109,13 @@ public class InstructionSetZ80 implements InstructionSet {
             if (ix || iy) {
                 String reg = ix ? "IX" : "IY";
                 if (operandFmt.contains("(HL)") && hasDisplacement) {
-                    int displacement = program.peek(2);
+                    int displacement = program.peekUnsignedByte(2);
                     operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
                 } else if (operandFmt.contains("(HL)") && b == 0xe9) {
                     // JP (IX) and JP (IY) are special
                     operandFmt = operandFmt.replace("(HL)", String.format("(%s)", reg));
                 } else if (operandFmt.contains("(HL)")) {
-                    int displacement = program.peek(length);
+                    int displacement = program.peekUnsignedByte(length);
                     operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
                     length++;
                 } else if (operandFmt.contains("HL")) {

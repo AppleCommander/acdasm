@@ -36,11 +36,14 @@ public class Program {
     public boolean hasMore() {
         return offset < code.length;
     }
-    public int peek() {
-        return peek(0);
+    public int peekUnsignedByte() {
+        return peekUnsignedByte(0);
     }
-    public int peek(int n) {
+    public int peekUnsignedByte(int n) {
         return offset+n < code.length ? Byte.toUnsignedInt(code[offset+n]) : 0;
+    }
+    public int peekSignedByte(int n) {
+        return offset+n < code.length ? code[offset+n] : 0;
     }
     public byte[] read(int n) {
         byte[] x = Arrays.copyOfRange(code, offset, offset+n);
