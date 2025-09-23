@@ -53,7 +53,7 @@ public class InstructionSetPCode implements InstructionSet {
             if (procedure.currentOffset() >= procedure.jumpTable()) {
                 assembly.add(Instruction.at(procedure.currentAddress())
                         .mnemonic("J/T")
-                        .opAddress("%s", "$%04X", procedure.currentAddress() - procedure.readW())
+                        .opAddress("%s", "$%04X", procedure.readSelfRelativeW())
                         .code(procedure.bytesRead())
                         .get());
                 continue;
@@ -107,13 +107,12 @@ public class InstructionSetPCode implements InstructionSet {
                         procedure.alignToWord();
                         int w1 = procedure.readW();
                         int w2 = procedure.readW();
-                        builder.opValue("%d..%d", w1, w2);
+                        builder.opValue("Range %d..%d", w1, w2);
                         procedure.readUB();                         // UJP per documentation
                         int w3addr = procedure.readSBOffset() + 6;  // adjusted for XJP itself
                         builder.opValue("UJP $%04X", w3addr);
-                        // TODO setup self-relative addresses
                         for (int i = w1; i <= w2; i++) {
-                            builder.opAddress("%s", "%04X", procedure.readW());
+                            builder.opAddress("%s", "$%04X", procedure.readSelfRelativeW());
                         }
                     }
                     default -> throw new RuntimeException("Unexpected flag type: " + flag);
@@ -200,6 +199,9 @@ public class InstructionSetPCode implements InstructionSet {
         }
         public int readW() {
             return readUB() | readUB() << 8;
+        }
+        public int readSelfRelativeW() {
+            return program.currentAddress() + length - readW();
         }
         public int readB() {
             // Range 0..127
