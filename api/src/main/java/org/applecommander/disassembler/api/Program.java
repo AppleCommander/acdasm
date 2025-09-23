@@ -25,14 +25,20 @@ public class Program {
     private final int baseAddress;
     private final byte[] code;
     private int offset;
+    // Informational point in code. Serves as a context for InstructionSet.
+    private int mark;
 
     public Program(byte[] code, int address) {
         Objects.requireNonNull(code);
         this.baseAddress = address;
         this.code = code;
         this.offset = 0;
+        this.mark = 0;
     }
 
+    public int length() {
+        return code.length;
+    }
     public boolean hasMore() {
         return offset < code.length;
     }
@@ -50,10 +56,23 @@ public class Program {
         offset += n;
         return x;
     }
+    /** Get an unsigned byte from specified offset. This is not relative like the others. */
+    public int getUnsignedByte(int n) {
+        return n < code.length ? Byte.toUnsignedInt(code[n]) : 0;
+    }
     public int currentOffset() {
         return offset;
     }
+    public int baseAddress() {
+        return baseAddress;
+    }
     public int currentAddress() {
         return (baseAddress+offset) % ADDRESS_SPACE; //wrap around to 0 if address exceeds the address space
+    }
+    public int mark() {
+        return mark;
+    }
+    public void mark(int mark) {
+        this.mark = mark;
     }
 }

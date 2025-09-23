@@ -27,6 +27,7 @@ import org.applecommander.disassembler.api.Disassembler;
 import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
+import org.applecommander.disassembler.api.pcode.InstructionSetPCode;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import org.applecommander.disassembler.api.switching6502.InstructionSet6502Switching;
 import org.applecommander.disassembler.api.z80.InstructionSetZ80;
@@ -207,25 +208,29 @@ public class Main implements Callable<Integer> {
         public void select6502(boolean flag) {
             this.instructionSet = InstructionSet6502.for6502();
         }
-        @Option(names = { "--65C02" }, description = "WDC 65C02.")
+        @Option(names = { "--65c02", "--65C02" }, description = "WDC 65C02.")
         public void select65C02(boolean flag) {
             this.instructionSet = InstructionSet6502.for65C02();
         }
-        @Option(names = { "--6502X" }, description = "MOS 6502 + 'illegal' instructions.")
+        @Option(names = { "--6502x", "--6502X" }, description = "MOS 6502 + 'illegal' instructions.")
         public void select6502X(boolean flag) {
             this.instructionSet = InstructionSet6502.for6502withIllegalInstructions();
         }
-        @Option(names = { "--SWEET16" }, description = "SWEET16.")
+        @Option(names = { "--sweet16", "--SWEET16" }, description = "SWEET16.")
         public void selectSWEET16(boolean flag) {
             this.instructionSet = InstructionSetSWEET16.forSWEET16();
         }
-        @Option(names = { "--6502S" }, description = "MOS 6502 with SWEET16 switching.")
+        @Option(names = { "--6502s", "--6502S" }, description = "MOS 6502 with SWEET16 switching.")
         public void select6502Switching(boolean flag) {
             this.instructionSet = InstructionSet6502Switching.withSwitching();
         }
-        @Option(names = { "--Z80" }, description = "Zilog Z80.")
+        @Option(names = { "--z80", "--Z80" }, description = "Zilog Z80.")
         public void selectZ80(boolean flag) {
             this.instructionSet = InstructionSetZ80.forZ80();
+        }
+        @Option(names = { "--pcode", "--PCODE" }, description = "Apple Pascal p-code")
+        public void selectPCODE(boolean flag) {
+            this.instructionSet = InstructionSetPCode.forApplePascal();
         }
     }
 }
