@@ -17,6 +17,7 @@
 package org.applecommander.disassembler.api;
 
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
+import org.applecommander.disassembler.api.pcode.InstructionSetPCode;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import org.applecommander.disassembler.api.z80.InstructionSetZ80;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -28,6 +29,8 @@ import org.junit.jupiter.params.support.ParameterDeclarations;
 
 import java.io.*;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,6 +67,12 @@ public class InstructionSetTest {
     @ArgumentsSource(InstructionSetProviderZ80.class)
     public void testZ80InstructionSet(int lineNumber, int address, byte[] code, String assembly) {
         test(InstructionSetZ80.forZ80(), address, code, assembly);
+    }
+
+    @ParameterizedTest(name = "PCODE[{0}] => {3}")
+    @ArgumentsSource(InstructionSetProviderPCODE.class)
+    public void testPCODEInstructionSet(int lineNumber, int address, byte[] code, String assembly) {
+        test(InstructionSetPCode.forApplePascal(), address, code, assembly);
     }
 
     void test(InstructionSet instructionSet, int address, byte[] code, String assembly) {
@@ -108,8 +117,45 @@ public class InstructionSetTest {
             super("/Z80.txt");
         }
     }
+    static class InstructionSetProviderPCODE extends InstructionSetProvider {
+        InstructionSetProviderPCODE() { super("/PCODE.txt"); }
+    }
     static class InstructionSetProvider implements ArgumentsProvider {
+        /** Hexadecimal digits when in HEXADECIMAL mode (the default). */
         static final Pattern HEX = Pattern.compile("^\\p{XDigit}\\p{XDigit}$", Pattern.CASE_INSENSITIVE);
+        /** Decimal digits when in DECIMAL mode. */
+        static final Pattern DEC = Pattern.compile("^-?\\d{1,3}$", Pattern.CASE_INSENSITIVE);
+        /** Hexadecimal digits when in DECIMAL mode. More traditional hex digits. */
+        static final Pattern DHEX = Pattern.compile("^0x\\p{XDigit}\\p{XDigit}$", Pattern.CASE_INSENSITIVE);
+
+        enum Mode {
+            HEXADECIMAL(value -> {
+                if (HEX.matcher(value).matches()) {
+                    return Optional.of(Integer.parseInt(value, 16));
+                }
+                return Optional.empty();
+            }),
+            DECIMAL(value -> {
+                if (DEC.matcher(value).matches()) {
+                    return Optional.of(Integer.parseInt(value.replaceAll("[dD]", "")));
+                }
+                if (DHEX.matcher(value).matches()) {
+                    return Optional.of(Integer.parseInt(value.substring(2), 16));
+                }
+                return Optional.empty();
+            });
+
+            Function<String,Optional<Integer>> converter;
+
+            Mode(Function<String,Optional<Integer>> converter) {
+                this.converter = converter;
+            }
+
+            public Optional<Integer> convert(String value) {
+                assert value != null;
+                return converter.apply(value);
+            }
+        };
 
         final String[] filenames;
         protected InstructionSetProvider(String... filenames) {
@@ -124,6 +170,7 @@ public class InstructionSetTest {
                 assert inputStream != null;
 
                 int addr = 0;
+                Mode mode = Mode.HEXADECIMAL;
                 try (LineNumberReader reader = new LineNumberReader(new InputStreamReader(inputStream))) {
                     while (true) {
                         String line = reader.readLine();
@@ -133,6 +180,20 @@ public class InstructionSetTest {
                             continue;
                         }
                         line = line.trim();
+                        // Handle line wraps ("+")
+                        while (line.endsWith("+")) {
+                            line = line.replace("+", "").trim();
+                            String next = reader.readLine();
+                            line = String.join(" ", line, next.trim());
+                        }
+                        // Handle pragma declarations
+                        if (line.startsWith("!")) {
+                            if (line.equalsIgnoreCase("!decimal")) {
+                                mode = Mode.DECIMAL;
+                                continue;
+                            }
+                            throw new RuntimeException("Unsupported pragma: " + line);
+                        }
                         // Skip empty lines
                         if (line.isBlank()) continue;
                         // Set default address (example "300:")
@@ -143,12 +204,13 @@ public class InstructionSetTest {
                         // Add test case (example "69 44      ADC #$44")
                         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                         StringBuilder assembly = new StringBuilder();
-                        boolean lookingForHex = true;
+                        boolean lookingForCode = true;
                         for (String part : line.split(" ")) {
-                            if (lookingForHex && HEX.matcher(part).matches()) {
-                                bytes.write(Integer.parseInt(part, 16));
+                            Optional<Integer> ivalue = mode.convert(part);
+                            if (lookingForCode && ivalue.isPresent()) {
+                                bytes.write(ivalue.get());
                             } else {
-                                lookingForHex = false;
+                                lookingForCode = false;
                                 // Using a "-" to separate opcodes that happen to be 2 letters which also are hex digits (aka SWEET16 "BC")
                                 if ("-".equals(part)) continue;
                                 if (!assembly.isEmpty()) assembly.append(' ');

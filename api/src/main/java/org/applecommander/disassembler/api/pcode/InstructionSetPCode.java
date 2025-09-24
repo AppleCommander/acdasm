@@ -6,6 +6,7 @@ import org.applecommander.disassembler.api.Program;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.applecommander.disassembler.api.pcode.InstructionSetPCode.Flag.*;
@@ -16,10 +17,22 @@ public class InstructionSetPCode implements InstructionSet {
     }
 
     // List of standard procedures.
-    private static final String[] CSP_PROCS = {
-            "", "NEW", "MVL", "MVR", "EXIT", "IDS", "TRS", "TIM",
-            "FLC", "SCN", "TNC", "RND", "MRK", "RLS", "POT"
-    };
+    private static final Map<Integer,String> CSP_MAP = Map.ofEntries(
+            Map.entry(1, "NEW"),
+            Map.entry(2, "MVL"),
+            Map.entry(3, "MVR"),
+            Map.entry(4, "EXIT"),
+            Map.entry(7, "IDS"),
+            Map.entry(8, "TRS"),
+            Map.entry(9, "TIM"),
+            Map.entry(10, "FLC"),
+            Map.entry(11, "SGN"),
+            Map.entry(22, "TNC"),
+            Map.entry(23, "RND"),
+            Map.entry(31, "MRK"),
+            Map.entry(32, "RLS"),
+            Map.entry(35, "POT")
+    );
     // List of type names. (2 = reals, 4 = strings, 6 = booleans, 8 = sets [opcodes listed as POWR though],
     // ... 10 = byte arrays, 12 = words)
     private static final String[] TYPE_NAMES = {
@@ -80,18 +93,17 @@ public class InstructionSetPCode implements InstructionSet {
                     }
                     case CSP -> {
                         int csp = procedure.readUB();
-                        if (csp > 0 && csp < CSP_PROCS.length) {
-                            builder.mnemonic(CSP_PROCS[csp]);
+                        if (CSP_MAP.containsKey(csp)) {
+                            builder.mnemonic(CSP_MAP.get(csp));
                         } else {
                             builder.opValue("%d", csp);
                         }
                     }
                     case LDC -> {
-                        int ub = procedure.readUB();
-                        builder.opValue("%d", ub);
+                        int ub = procedure.readUB();    // UB is implied by size of list
                         procedure.alignToWord();
                         for (int i = 0; i < ub; i++) {
-                            builder.opValue("%w", procedure.readW());
+                            builder.opValue("%d", procedure.readW());
                         }
                     }
                     case LPA, LSA -> {
@@ -104,12 +116,13 @@ public class InstructionSetPCode implements InstructionSet {
                         builder.opValue("'%s'", sb.toString());
                     }
                     case XJP -> {
-                        procedure.alignToWord();
+                        boolean aligned = procedure.alignToWord();
                         int w1 = procedure.readW();
                         int w2 = procedure.readW();
                         builder.opValue("Range %d..%d", w1, w2);
                         procedure.readUB();                         // UJP per documentation
-                        int w3addr = procedure.readSBOffset() + 6;  // adjusted for XJP itself
+                        int w3addr = procedure.readSBOffset() + 5;  // adjusted for XJP itself
+                        if (aligned) w3addr++;
                         builder.opValue("UJP $%04X", w3addr);
                         for (int i = w1; i <= w2; i++) {
                             builder.opAddress("%s", "$%04X", procedure.readSelfRelativeW());
@@ -163,10 +176,12 @@ public class InstructionSetPCode implements InstructionSet {
         public int jumpTable() {
             return program.length() + jumpTable + 8;    // account for attribute table
         }
-        public void alignToWord() {
+        public boolean alignToWord() {
             if ((program.currentAddress() + length & 1) == 1) {
                 length++;
+                return true;
             }
+            return false;
         }
         public int currentOffset() {
             return program.currentOffset();
@@ -293,7 +308,7 @@ public class InstructionSetPCode implements InstructionSet {
         opcode(200, "LEQI");
         opcode(201, "LESI");
         opcode(202, "LDL", B);
-        opcode(203, "NEWI");
+        opcode(203, "NEQI");
         opcode(204, "STL", B);
         opcode(205, "CXP", UB, UB);     // UB1 and UB2
         opcode(206, "CLP", UB);
