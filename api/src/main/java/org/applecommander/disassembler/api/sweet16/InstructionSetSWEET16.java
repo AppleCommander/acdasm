@@ -136,17 +136,14 @@ public class InstructionSetSWEET16 implements InstructionSet {
                 addressMode = AddressModeSWEET16.IMP;
             }
 
-            StringBuilder sb = new StringBuilder();
-            sb.append(opcode.getMnemonic());
-            sb.append(" ");
-            sb.append(switch (addressMode) {
-                case CON -> String.format("R%X,#VALUE", low);
-                case BRA -> "ADDR";
-                case DIR -> String.format("R%X", low);
-                case IND -> String.format("@R%X", low);
-                case IMP -> "";
-            });
-            return sb.toString();
+            return opcode.getMnemonic() +
+                    switch (addressMode) {
+                        case CON -> String.format(" R%X,#VALUE", low);
+                        case BRA -> " ADDR";
+                        case DIR -> String.format(" R%X", low);
+                        case IND -> String.format(" @R%X", low);
+                        case IMP -> "";
+                    };
         }
     }
 }

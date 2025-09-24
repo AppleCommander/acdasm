@@ -119,9 +119,7 @@ public class InstructionSetPCode implements InstructionSet {
                 }
             }
             // Catch stuff with constants
-            opcode.impliedValue.ifPresent(n -> {
-                builder.opValue("%d", n);
-            });
+            opcode.impliedValue.ifPresent(n -> builder.opValue("%d", n));
 
             builder.code(procedure.bytesRead());
             assembly.add(builder.get());
@@ -365,7 +363,7 @@ public class InstructionSetPCode implements InstructionSet {
          * The case table is <code>(W2 - W1 + 1)</code> words long, and
          * contains self-relative locations.
          * <p/>
-         * If TOS, the actual index, is not in the range W1..W2, then point IPC
+         * If TOS, the actual index, is not in the range W1-W2, then point IPC
          * at W3. Otherwise, use <code>TOS - W1</code> as an index into the case
          * table, and set IPC to the byte address <code>casetable[tos-W1]</code>
          * minus the contents of <code>casetable[tos-W1]</code>.

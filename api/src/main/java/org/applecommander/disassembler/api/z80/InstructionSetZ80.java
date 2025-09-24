@@ -124,7 +124,7 @@ public class InstructionSetZ80 implements InstructionSet {
                         operandFmt = operandFmt.replace("HL", reg);
                     }
                 }
-                // Setup the operand
+                // Set up the operand
                 if (operandFmt.contains("data") && op.flags.contains(DATLO)) {
                     builder.opValue(operandFmt.replace("data", "%04XH"), operandValue);
                 } else if (operandFmt.contains("add")) {
@@ -156,39 +156,26 @@ public class InstructionSetZ80 implements InstructionSet {
             );
     }
 
-    private static class OpcodeTableZ80 implements OpcodeTable {
-        private final String name;
-        private final Opcode[] opcodes;
-
-        private OpcodeTableZ80(String name, Opcode[] opcodes) {
-            this.name = name;
-            this.opcodes = opcodes;
-        }
-
+    private record OpcodeTableZ80(String name, Opcode[] opcodes) implements OpcodeTable {
         @Override
-        public String name() {
-            return name;
-        }
-
-        @Override
-        public String opcodeExample(int op) {
-            Opcode opcode = opcodes[op];
-            if (opcode == null) {
-                return "-";
+            public String opcodeExample(int op) {
+                Opcode opcode = opcodes[op];
+                if (opcode == null) {
+                    return "-";
+                }
+                String fmt = String.join(",", opcode.fmts)
+                        .replace("rp", "rr")         // register pair
+                        .replace("data", "VALUE")   // both 8-bit and 16-bit values
+                        .replace("ddd", "r")        // register
+                        .replace("sss", "r")        // register
+                        .replace("offset", "ADDR")  // address offset
+                        .replace("add", "ADDR");    // address
+                // cc remains as condition code
+                // n remains as n
+                // port remains as port
+                return String.format("%s %s", opcode.mnemonic, fmt);
             }
-            String fmt = String.join(",",opcode.fmts)
-                    .replace("rp","rr")         // register pair
-                    .replace("data", "VALUE")   // both 8-bit and 16-bit values
-                    .replace("ddd", "r")        // register
-                    .replace("sss", "r")        // register
-                    .replace("offset", "ADDR")  // address offset
-                    .replace("add", "ADDR");    // address
-            // cc remains as condition code
-            // n remains as n
-            // port remains as port
-            return String.format("%s %s", opcode.mnemonic, fmt);
         }
-    }
 
     record Opcode(int opcode, String mnemonic, String[] fmts, Set<Flag> flags) {
         public Opcode(int opcode, String mnemonic, String fmts, Flag... flags) {
@@ -355,7 +342,7 @@ public class InstructionSetZ80 implements InstructionSet {
                     String ddd= regs[d];
                     for (int s=0; s<8; s++) {
                         if (d==0b110 && s==0b110) {
-                            // special case. LD (HL),(HL) is not a LD. This is instead HALT.
+                            // special case. LD (HL),(HL) is not an LD. This is instead HALT.
                             continue;
                         }
                         String sss= regs[s];

@@ -66,7 +66,7 @@ public class GenerateMarkdown {
             pw.println();
             // Generate table
             for (int y = 0; y < 256; y += 16) {
-                pw.printf(" %1X_ |", y >> 4);
+                pw.printf("| %1X_ |", y >> 4);
                 for (int x = 0; x < 16; x++) {
                     String text = opcodeTable.opcodeExample(y | x);
                     pw.printf(" %s |", text);
