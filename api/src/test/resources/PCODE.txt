@@ -240,7 +240,7 @@
 # SYSTEM SUPPORT PROCEDURES
 #> Byte array procedures
 158 10              FLC
-158 11              SGN
+158 11              SCN
 158 2               MVL
 158 3               MVR
 213 0x7f            BPT 127

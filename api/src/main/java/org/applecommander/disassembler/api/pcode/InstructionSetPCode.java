@@ -18,20 +18,32 @@ public class InstructionSetPCode implements InstructionSet {
 
     // List of standard procedures.
     private static final Map<Integer,String> CSP_MAP = Map.ofEntries(
+            Map.entry(0, "IOC"),    // IO CHECK
             Map.entry(1, "NEW"),
-            Map.entry(2, "MVL"),
-            Map.entry(3, "MVR"),
+            Map.entry(2, "MVL"),    // MOVE LEFT
+            Map.entry(3, "MVR"),    // MOVE RIGHT
             Map.entry(4, "EXIT"),
-            Map.entry(7, "IDS"),
-            Map.entry(8, "TRS"),
-            Map.entry(9, "TIM"),
-            Map.entry(10, "FLC"),
-            Map.entry(11, "SGN"),
-            Map.entry(22, "TNC"),
-            Map.entry(23, "RND"),
-            Map.entry(31, "MRK"),
-            Map.entry(32, "RLS"),
-            Map.entry(35, "POT")
+            Map.entry(5, "UREAD"),  // UNIT READ
+            Map.entry(6, "UWRT"),   // UNIT WRITE
+            Map.entry(7, "IDS"),    // ID SEARCH
+            Map.entry(8, "TRS"),    // TREE SEARCH
+            Map.entry(9, "TIM"),    // TIME
+            Map.entry(10, "FLC"),   // FILL CHARACTER
+            Map.entry(11, "SCN"),   // SCAN
+            Map.entry(12, "USTAT"), // UNIT STATUS
+            Map.entry(20, "LDS"),   // LOAD SEGMENT
+            Map.entry(21, "ULS"),   // UNLOAD SEGMENT
+            Map.entry(22, "TNC"),   // TRUNCATE REAL
+            Map.entry(23, "RND"),   // ROUND REAL
+            Map.entry(31, "MRK"),   // MARK STACK
+            Map.entry(32, "RLS"),   // RELEASE STACK
+            Map.entry(33, "IOR"),   // IO RESULT
+            Map.entry(34, "UBUSY"), // UNIT BUSY
+            Map.entry(35, "POT"),   // POWER OF TEN (REAL)
+            Map.entry(36, "UWAIT"), // UNIT WAIT
+            Map.entry(37, "UCLR"),  // UNIT CLEAR
+            Map.entry(38, "HLT"),   // HALT
+            Map.entry(39, "MEMAV")  // MEMORY AVAILABLE
     );
     // List of type names. (2 = reals, 4 = strings, 6 = booleans, 8 = sets [opcodes listed as POWR though],
     // ... 10 = byte arrays, 12 = words)
