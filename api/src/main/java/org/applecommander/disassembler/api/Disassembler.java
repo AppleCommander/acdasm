@@ -19,7 +19,6 @@ package org.applecommander.disassembler.api;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +43,7 @@ public class Disassembler {
 
     private int startAddress;
     private int bytesToSkip;
+    private int bytesToDecode;
     private byte[] code;
     private InstructionSet instructionSet;
 
@@ -52,29 +52,25 @@ public class Disassembler {
     }
     
     private List<Instruction> decode(Map<Integer,String> labels) {
-        List<Instruction> assembly = new ArrayList<>();
+        // Create a subset of the original code and adjust starting address accordingly
+        if (bytesToSkip > 0 || bytesToDecode > 0) {
+            byte[] dest = new byte[bytesToDecode == 0 ? code.length - bytesToSkip : bytesToDecode];
+            System.arraycopy(code, bytesToSkip, dest, 0, dest.length);
+            code = dest;
+            startAddress+= bytesToSkip;
+        }
+
         Program program = new Program(code,startAddress);
+        List<Instruction> assembly = instructionSet.decode(program);
 
-        // 1st pass: Gather all the instruction builders and identify all target addresses
-        while (program.hasMore()) {
-            Instruction instruction = null;
-            if (program.currentOffset() < bytesToSkip) {
-                instruction = Instruction.at(program.currentAddress())
-                        .mnemonic("---")
-                        .code(program.read(1))
-                        .get();
-            }
-            else {
-                instruction = instructionSet.decode(program);
-            }
-            assembly.add(instruction);
-
+        // Gather all the instructions and identify all target addresses
+        assembly.forEach(instruction -> {
             instruction.addressRef().flatMap(Instruction.Operand::address).ifPresent(address -> {
                 if ((address >= startAddress) && (address < startAddress + code.length)) {
                     labels.computeIfAbsent(address, addr -> String.format("L%04X", addr));
                 }
             });
-        }
+        });
 
         return assembly;
     }
@@ -114,6 +110,10 @@ public class Disassembler {
         }
         public Builder bytesToSkip(int skip) {
             disassembler.bytesToSkip = skip;
+            return this;
+        }
+        public Builder bytesToDecode(int length) {
+            disassembler.bytesToDecode = length;
             return this;
         }
         public Builder use(InstructionSet instructionSet) {

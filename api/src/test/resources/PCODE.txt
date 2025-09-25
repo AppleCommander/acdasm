@@ -1,0 +1,266 @@
+# Note that most of these opcodes are tested as decimal.
+# This is due to the fact that Apple documented the opcodes in decimal.
+!decimal
+
+# All opcodes assumed to be at $200 (also see the "201:" section for word-aligned opcodes)
+200:
+
+# Note "B" parameter is big:
+# - If first byte < 128 then it is 0..127.
+# - If first byte > 217 then it is two bytes long and in the range 128..32767.
+# So:
+# 0x05 => 5
+# 0x7f => 127
+# 0x80 0x80 => 128
+# 0x7f 0xff => 32767
+
+# ONE-WORD LOADS AND STORES
+#> Constant (note, this is a subset)
+0                   SLDC 0
+1                   SLDC 1
+2                   SLDC 2
+10                  SLDC 10
+25                  SLDC 25
+50                  SLDC 50
+75                  SLDC 75
+100                 SLDC 100
+125                 SLDC 125
+127                 SLDC 127
+159                 LDCN
+199 0x34 0x12       LDCI 4660
+#> Local
+216                 SLDL 1
+217                 SLDL 2
+218                 SLDL 3
+219                 SLDL 4
+220                 SLDL 5
+221                 SLDL 6
+222                 SLDL 7
+223                 SLDL 8
+224                 SLDL 9
+225                 SLDL 10
+226                 SLDL 11
+227                 SLDL 12
+228                 SLDL 13
+229                 SLDL 14
+230                 SLDL 15
+231                 SLDL 16
+202 0x7f            LDL 127
+202 0x80 0xff       LDL 255
+198 0x7f            LLA 127
+198 0x80 0xff       LLA 255
+204 0x7f            STL 127
+204 0x80 0xff       STL 255
+#> Global
+232                 SLDO 1
+233                 SLDO 2
+234                 SLDO 3
+235                 SLDO 4
+236                 SLDO 5
+237                 SLDO 6
+238                 SLDO 7
+239                 SLDO 8
+240                 SLDO 9
+241                 SLDO 10
+242                 SLDO 11
+243                 SLDO 12
+244                 SLDO 13
+245                 SLDO 14
+246                 SLDO 15
+247                 SLDO 16
+169 0x7f            LDO 127
+169 0x80 0xff       LDO 255
+165 0x7f            LAO 127
+165 0x80 0xff       LAO 255
+171 0x7f            SRO 127
+171 0x80 0xff       SRO 255
+#> Intermediate
+182 12 0x7f         LOD 12,127
+182 12 0x80 0xff    LOD 12,255
+178 12 0x7f         LDA 12,127
+178 12 0x80 0xff    LDA 12,255
+184 12 0x7f         STR 12,127
+184 12 0x80 0xff    STR 12,255
+#> Indirect
+248                 SIND 0
+249                 SIND 1
+250                 SIND 2
+251                 SIND 3
+252                 SIND 4
+253                 SIND 5
+254                 SIND 6
+255                 SIND 7
+163 0x7f            IND 127
+163 0x80 0xff       IND 255
+154                 STO
+#> Extended
+157 12 0x7f         LDE 12,127
+157 12 0x80 0xff    LDE 12,255
+167 12 0x7f         LAE 12,127
+167 12 0x80 0xff    LAE 12,255
+209 12 0x7f         STE 12,127
+209 12 0x80 0xff    STE 12,255
+
+# MULTIPLE WORD LOADS AND STORES (REALS AND SETS)
+179 1 0x34 0x12     LDC 4660
+188 12              LDM 12
+189 12              STM 12
+
+# BYTE ARRAY HANDLING
+190                 LDB
+191                 STB
+
+# STRING HANDLING
+166 4 84 69 88 84   LSA 'TEXT'
+170 12              SAS 12
+155                 IXS
+
+# RECORD AND ARRAY HANDLING
+168 0x7f            MOV 127
+168 0x80 0xff       MOV 255
+162 0x7f            INC 127
+162 0x80 0xff       INC 255
+164 0x7f            IXA 127
+164 0x80 0xff       IXA 255
+192 5 10            IXP 5,10
+208 4 84 69 88 84   LPA 'TEXT'
+186                 LDP
+187                 STP
+
+# DYNAMIC VARIABLE ALLOCATION
+158 1               NEW
+158 31              MRK
+158 32              RLS
+
+# TOP OF STACK ARITHMETIC
+#> Integers
+128                 ABI
+130                 ADI
+145                 NGI
+149                 SBI
+143                 MPI
+152                 SQI
+134                 DVI
+142                 MODI
+136                 CHK
+195                 EQUI
+203                 NEQI
+200                 LEQI
+201                 LESI
+196                 GEQI
+197                 GRTI
+#> Reals
+138                 FLT
+137                 FLO
+158 22              TNC
+158 23              RND
+129                 ABR
+131                 ADR
+146                 NGR
+150                 SBR
+144                 MPR
+153                 SQR
+135                 DVR
+158 35              POT
+175 2               EQUREAL
+183 2               NEQREAL
+180 2               LEQREAL
+181 2               LESREAL
+176 2               GEQREAL
+177 2               GRTREAL
+#> Strings
+175 4               EQUSTR
+183 4               NEQSTR
+180 4               LEQSTR
+181 4               LESSTR
+176 4               GEQSTR
+177 4               GRTSTR
+#> Logical
+132                 LAND
+141                 LOR
+147                 LNOT
+175 6               EQUBOOL
+183 6               NEQBOOL
+180 6               LEQBOOL
+181 6               LESBOOL
+176 6               GEQBOOL
+177 6               GRTBOOL
+#> Sets
+160 12              ADJ 12
+151                 SGS
+148                 SRS
+139                 INN
+156                 UNI
+140                 INT
+133                 DIF
+175 8               EQUPOWR
+183 8               NEQPOWR
+180 8               LEQPOWR
+177 8               GRTPOWR
+#> Byte arrays
+175 10 0x7f         EQUBYT 127
+175 10 0x80 0xff    EQUBYT 255
+183 10 0x7f         NEQBYT 127
+183 10 0x80 0xff    NEQBYT 255
+180 10 0x7f         LEQBYT 127
+180 10 0x80 0xff    LEQBYT 255
+181 10 0x7f         LESBYT 127
+181 10 0x80 0xff    LESBYT 255
+176 10 0x7f         GEQBYT 127
+176 10 0x80 0xff    GEQBYT 255
+177 10 0x7f         GRTBYT 127
+177 10 0x80 0xff    GRTBYT 255
+#> Records and word arrays
+175 12 0x7f         EQUWORD 127
+175 12 0x80 0xff    EQUWORD 255
+183 12 0x7f         NEQWORD 127
+183 12 0x80 0xff    NEQWORD 255
+
+# JUMPS (note: not testing JTAB references)
+185 0x10            UJP $0212
+161 0x10            FJP $0212
+211 0x10            EFJ $0212
+212 0x10            NFJ $0212
+#--> The first -0- is for word alignment
+172 0 1 0 5 0 185 10 +
+    1 0 2 0 3 0 4 0 +
+    5 0             XJP Range 1..5,UJP $0212,$0207,$0208,$0209,$020A,$020B
+
+# PROCEDURE AND FUNCTION CALLS
+206 12              CLP 12
+207 12              CGP 12
+174 12              CIP 12
+194 12              CBP 12
+205 0 6             CXP 0,6
+#--> Skipping generic 158 CSP
+173 12              RNP 12
+193 12              RBP 12
+158 4               EXIT
+
+# SYSTEM SUPPORT PROCEDURES
+#> Byte array procedures
+158 10              FLC
+158 11              SCN
+158 2               MVL
+158 3               MVR
+213 0x7f            BPT 127
+213 0x80 0xff       BPT 255
+158 8               TRS
+158 7               IDS
+#> Miscellaneous
+158 9               TIM
+214                 XIT
+215                 NOP
+
+
+
+# All opcodes assumed to be at $201 (for testing word-aligned opcodes)
+201:
+
+# MULTIPLE WORD LOADS AND STORES (REALS AND SETS)
+179 1 0 0x34 0x12   LDC 4660
+
+# JUMPS (note: not testing JTAB references)
+172 1 0 5 0 185 10 +
+    1 0 2 0 3 0 4 0 +
+    5 0             XJP Range 1..5,UJP $0212,$0207,$0208,$0209,$020A,$020B

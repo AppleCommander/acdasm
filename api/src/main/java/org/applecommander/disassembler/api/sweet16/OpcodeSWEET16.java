@@ -23,12 +23,12 @@ public enum OpcodeSWEET16 {
     // Unknown
     ZZZ("???");
 
-    private String mnemonic;
+    private final String mnemonic;
 
-    private OpcodeSWEET16() {
+    OpcodeSWEET16() {
         this.mnemonic = name();
     }
-    private OpcodeSWEET16(String mnemonic) {
+    OpcodeSWEET16(String mnemonic) {
         this.mnemonic = mnemonic;
     }
     

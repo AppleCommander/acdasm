@@ -16,6 +16,7 @@
  */
 package org.applecommander.disassembler.api.switching6502;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -58,11 +59,15 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
-    public Instruction decode(Program program) {
-        if (!pending.isEmpty()) {
-            return pending.remove();
+    public List<Instruction> decode(Program program) {
+        List<Instruction> assembly = new ArrayList<>();
+        while (program.hasMore()) {
+            if (!pending.isEmpty()) {
+                assembly.add(pending.remove());
+            }
+            assembly.add(strategy.apply(program));
         }
-        return strategy.apply(program);
+        return assembly;
     }
 
     @Override
@@ -71,7 +76,7 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     Instruction decode6502(Program program) {
-        Instruction instruction = mos6502.decode(program);
+        Instruction instruction = mos6502.decodeOne(program);
         int operandAddress = instruction.addressRef().flatMap(Instruction.Operand::address).orElse(0);
         if ("JSR".equals(instruction.mnemonic()) && operandAddress == 0xf689) {
             strategy = this::decodeSWEET16;
@@ -81,7 +86,7 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
     
     Instruction decodeSWEET16(Program program) {
-        Instruction instruction = sweet16.decode(program);
+        Instruction instruction = sweet16.decodeOne(program);
         if ("RTN".equals(instruction.mnemonic())) {
             strategy = this::decode6502;
             pending.add(Instruction.at(program.currentAddress()).mnemonic(".6502").get());

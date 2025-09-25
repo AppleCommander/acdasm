@@ -33,22 +33,38 @@ public class Program {
         this.offset = 0;
     }
 
+    public int length() {
+        return code.length;
+    }
     public boolean hasMore() {
         return offset < code.length;
     }
-    public int peek() {
-        return peek(0);
+    public int peekUnsignedByte() {
+        return peekUnsignedByte(0);
     }
-    public int peek(int n) {
+    public int peekUnsignedByte(int n) {
         return offset+n < code.length ? Byte.toUnsignedInt(code[offset+n]) : 0;
+    }
+    public int peekUnsignedShort(int n) {
+        return peekUnsignedByte(n) | peekUnsignedByte(n+1) << 8;
+    }
+    public int peekSignedByte(int n) {
+        return offset+n < code.length ? code[offset+n] : 0;
     }
     public byte[] read(int n) {
         byte[] x = Arrays.copyOfRange(code, offset, offset+n);
         offset += n;
         return x;
     }
+    /** Get an unsigned byte from specified offset. This is not relative like the others. */
+    public int getUnsignedByte(int n) {
+        return n < code.length ? Byte.toUnsignedInt(code[n]) : 0;
+    }
     public int currentOffset() {
         return offset;
+    }
+    public int baseAddress() {
+        return baseAddress;
     }
     public int currentAddress() {
         return (baseAddress+offset) % ADDRESS_SPACE; //wrap around to 0 if address exceeds the address space

@@ -17,6 +17,7 @@
 package org.applecommander.disassembler.api;
 
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
+import org.applecommander.disassembler.api.pcode.InstructionSetPCode;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import org.applecommander.disassembler.api.z80.InstructionSetZ80;
 
@@ -33,7 +34,8 @@ public class GenerateMarkdown {
                 "6502X", InstructionSet6502.for6502withIllegalInstructions(),
                 "65C02", InstructionSet6502.for65C02(),
                 "SWEET16", InstructionSetSWEET16.forSWEET16(),
-                "Z80", InstructionSetZ80.forZ80()
+                "Z80", InstructionSetZ80.forZ80(),
+                "PCODE", InstructionSetPCode.forApplePascal()
             );
 
         for (Map.Entry<String,InstructionSet> entry : instructionSets.entrySet()) {
@@ -64,7 +66,7 @@ public class GenerateMarkdown {
             pw.println();
             // Generate table
             for (int y = 0; y < 256; y += 16) {
-                pw.printf(" %1X_ |", y >> 4);
+                pw.printf("| %1X_ |", y >> 4);
                 for (int x = 0; x < 16; x++) {
                     String text = opcodeTable.opcodeExample(y | x);
                     pw.printf(" %s |", text);
