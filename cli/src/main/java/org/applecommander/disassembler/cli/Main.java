@@ -16,21 +16,29 @@
  */
 package org.applecommander.disassembler.cli;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.applecommander.disassembler.api.Disassembler;
 import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
+import org.applecommander.disassembler.api.Program;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import org.applecommander.disassembler.api.pcode.InstructionSetPCode;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import org.applecommander.disassembler.api.switching6502.InstructionSet6502Switching;
 import org.applecommander.disassembler.api.z80.InstructionSetZ80;
+import org.applecommander.disassembler.cli.codefile.AssemblyProcedure;
+import org.applecommander.disassembler.cli.codefile.CodeFile;
+import org.applecommander.disassembler.cli.codefile.PCodeProcedure;
+import org.applecommander.disassembler.cli.codefile.Segment;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -99,9 +107,6 @@ public class Main implements Callable<Integer> {
         }
 
         final byte[] code = Files.readAllBytes(file);
-        if (length == 0) {
-            length = code.length;
-        }
 
         if (offset < 0 || offset > code.length) {
             String errormsg = String.format("offset(%d) is out of range(0-%d).", offset, code.length);
@@ -121,6 +126,15 @@ public class Main implements Callable<Integer> {
             libraries = new ArrayList<>();
         }
 
+        switch (this.cpuSelection.type) {
+            case ASSEMBLY -> disassemble(code);
+            case CODEFILE -> disassemble(CodeFile.load(code));
+        }
+
+        return 0;
+    }
+
+    public void disassemble(byte[] code) {
         List<Instruction> assembly = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
@@ -130,10 +144,78 @@ public class Main implements Callable<Integer> {
                 .decode(labels);
 
         assembly.forEach(emitter);
-        
-        return 0;
     }
-    
+
+    public void disassemble(CodeFile codeFile) {
+        // Reset components that are implied in the CodeFile itself:
+        offset = 0;
+        length = 0;
+        if (codeFile.comment() != null && !codeFile.comment().isEmpty()) {
+            System.out.printf("Comment:  %s\n", codeFile.comment());
+        }
+        for (Segment segment : codeFile.segments()) {
+            if (segment != null) disassemble(segment);
+        }
+    }
+
+    public void disassemble(Segment segment) {
+        System.out.printf(">> Seg #%02d: FROM=$%04x, TO=$%04x, N='%s', %-10s, T=$%04x, M=%-10s, Ver=%d\n",
+                segment.segNum(), segment.data().position(), segment.data().limit(), segment.name(),
+                segment.kind(), segment.textAddr(), segment.machineType(), segment.version());
+        if (segment.textInterface() != null && !segment.textInterface().isEmpty()) {
+            System.out.println(">  Interface text:");
+            System.out.println(segment.textInterface().indent(5));
+        }
+        for (var proc : segment.dictionary()) {
+            if (proc == null) {
+                System.out.println(">  Invalid procedure header.");
+                continue;
+            }
+            switch (proc) {
+                case PCodeProcedure pcode -> disassemble(pcode);
+                case AssemblyProcedure asm -> disassemble(asm);
+                default -> throw new RuntimeException("Unexpected procedure type: " + proc.getClass().getName());
+            }
+        }
+    }
+
+    public void disassemble(PCodeProcedure pcode) {
+        System.out.printf(">  Proc#%d, Lex Lvl %d, Enter $%04x, Exit $%04x, Param %d, Data %d, JTAB=$%04x\n",
+                pcode.procNum(), pcode.lexLevel(), pcode.enterIC(), pcode.exitIC(),
+                pcode.paramsSize(), pcode.dataSize(), pcode.jumpTable());
+        cpuSelection.instructionSet = InstructionSetPCode.forApplePascal();
+        startAddress = pcode.enterIC();
+        disassemble(pcode.codeBytes());
+    }
+
+    public void disassemble(AssemblyProcedure asm) {
+        System.out.printf(">  ASM Proc, Relocation Segment #%d, Enter $%04x\n",
+                asm.relocSegNum(), asm.enterIC());
+
+        BiConsumer<int[], String> formatter = (table, name) -> {
+            if (table.length > 0) {
+                System.out.printf("\t%s-relative relocation table: ", name);
+                for (int addr : table) System.out.printf("$%04X ", addr);
+                System.out.println();
+            }
+        };
+        formatter.accept(asm.baseRelativeReloc(), "base");
+        formatter.accept(asm.segRelativeReloc(), "segment");
+        formatter.accept(asm.procRelativeReloc(), "procedure");
+        formatter.accept(asm.interpRelativeReloc(), "interpreter");
+
+        var bb = ByteBuffer.wrap(asm.codeBytes());
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        for (int addr : asm.procRelativeReloc()) {
+            int offset = addr - asm.enterIC();
+            bb.putShort(offset, (short) (bb.getShort(offset) + asm.endIC()));
+        }
+
+        cpuSelection.instructionSet = InstructionSet6502.for6502();
+        startAddress = asm.enterIC();
+        disassemble(bb.array());
+    }
+
     public void emitWithLabels(Instruction instruction) {
         int bytesPerLine = cpuSelection.instructionSet.suggestedBytesPerInstruction();
         System.out.printf("%04X- ", instruction.address());
@@ -199,6 +281,7 @@ public class Main implements Callable<Integer> {
     
     private static class CpuSelection {
         private InstructionSet instructionSet = InstructionSet6502.for6502();
+        private Type type = Type.ASSEMBLY;
         
         public InstructionSet get() {
             return this.instructionSet;
@@ -231,6 +314,40 @@ public class Main implements Callable<Integer> {
         @Option(names = { "--pcode", "--PCODE" }, description = "Apple Pascal p-code")
         public void selectPCODE(boolean flag) {
             this.instructionSet = InstructionSetPCode.forApplePascal();
+        }
+        @Option(names = { "--codefile", "--CODEFILE" }, description = "Apple Pascal CODEFILE")
+        public void selectCODEFILE(boolean flag) {
+            this.type = Type.CODEFILE;
+            // A fake InstructionSet to prevent accidental NPE's.
+            this.instructionSet = new InstructionSet() {
+                @Override
+                public int defaultStartAddress() {
+                    return 0;
+                }
+
+                @Override
+                public List<String> defaultLibraryLabels() {
+                    return List.of();
+                }
+
+                @Override
+                public List<Instruction> decode(Program program) {
+                    return List.of();
+                }
+
+                @Override
+                public int suggestedBytesPerInstruction() {
+                    return 0;
+                }
+
+                @Override
+                public List<OpcodeTable> opcodeTables() {
+                    return List.of();
+                }
+            };
+        }
+        enum Type {
+            ASSEMBLY, CODEFILE;
         }
     }
 }
