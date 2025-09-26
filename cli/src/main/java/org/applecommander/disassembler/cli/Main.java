@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.applecommander.disassembler.api.Disassembler;
@@ -44,6 +45,9 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Help.*;
+
+import static picocli.CommandLine.Model.UsageMessageSpec.*;
 
 @Command(name = "acdasm", mixinStandardHelpOptions = true, versionProvider = VersionProvider.class,
          descriptionHeading = "%n",
@@ -90,12 +94,42 @@ public class Main implements Callable<Integer> {
     private final Map<Integer,String> labels = new HashMap<>();
     
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new Main())
-                           .setExecutionExceptionHandler(new PrintExceptionMessageHandler())
-                           .execute(args);
+        CommandLine cl = new CommandLine(new Main());
+        cl.getHelpSectionMap().put(SECTION_KEY_FOOTER_HEADING,
+                help -> help.createHeading("%nProcessor Defaults:%n"));
+        cl.getHelpSectionMap().put(SECTION_KEY_FOOTER, help -> {
+                    TextTable table = TableBuilder.with(help)
+                            .textHeader("Default Value")
+                            .textHeader("6502", InstructionSet6502.for6502())
+                            .textHeader("6502X", InstructionSet6502.for6502withIllegalInstructions())
+                            .textHeader("6502S", InstructionSet6502Switching.withSwitching())
+                            .textHeader("65C02", InstructionSet6502.for65C02())
+                            .textHeader("SWEET-16", InstructionSetSWEET16.forSWEET16())
+                            .textHeader("Z80", InstructionSetZ80.forZ80())
+                            .textHeader("P-CODE", InstructionSetPCode.forApplePascal())
+                            .row("Start Address", set -> {
+                                if (set instanceof InstructionSetZ80) {
+                                    return String.format("%04xH", set.defaults().startAddress());
+                                }
+                                return String.format("$%04X", set.defaults().startAddress());
+                            })
+                            .row("Library Labels", set -> {
+                                if (set.defaults().libraryLabels().isEmpty()) {
+                                    return "None";
+                                }
+                                return String.join(",", set.defaults().libraryLabels());
+                            })
+                            .row("Bytes/Instruction", set -> String.format("%d", set.defaults().bytesPerInstruction()))
+                            .row("Descriptions?", set -> set.defaults().includeDescription() ? "No" : "Yes")
+                            .build();
+                    return table.toString();
+                });
+        cl.setExecutionExceptionHandler(new PrintExceptionMessageHandler());
+
+        int exitCode = cl.execute(args);
         System.exit(exitCode);
     }
-    
+
     @Override
     public Integer call() throws Exception {
         final int MAX_ADDRESS = 0xFFFF;
@@ -359,6 +393,68 @@ public class Main implements Callable<Integer> {
         }
         enum Type {
             ASSEMBLY, CODEFILE;
+        }
+    }
+
+    static class TableBuilder {
+        public static TableBuilder with(CommandLine.Help help) {
+            return new TableBuilder(help);
+        }
+
+        private final CommandLine.Help help;
+        private final List<String> headerText = new ArrayList<>();
+        private final List<InstructionSet> columnObject = new ArrayList<>();
+        private final List<String> rowLabels = new ArrayList<>();
+        private final List<Function<InstructionSet,String>> rowFns = new ArrayList<>();
+
+        private TableBuilder(CommandLine.Help help) {
+            this.help = help;
+        }
+        public TableBuilder textHeader(String text) {
+            assert headerText.isEmpty();
+            headerText.add(text);
+            return this;
+        }
+        public TableBuilder textHeader(String text, InstructionSet instructionSet) {
+            assert !headerText.isEmpty();
+            assert headerText.size() == columnObject.size()+1;
+            headerText.add(text);
+            columnObject.add(instructionSet);
+            return this;
+        }
+        public TableBuilder row(String text, Function<InstructionSet,String> supplier) {
+            rowLabels.add(text);
+            rowFns.add(supplier);
+            assert rowLabels.size() <= headerText.size();
+            assert rowFns.size() < headerText.size();
+            return this;
+        }
+        public TextTable build() {
+            String[][] text = new String[rowLabels.size()][headerText.size()];
+            int[] widths = new int[headerText.size()];
+            for (int row=0; row<rowLabels.size(); row++) {
+                text[row][0] = rowLabels.get(row);
+                widths[0] = Math.max(widths[0], text[row][0].length());
+                var rowFn = rowFns.get(row);
+                for (int col=0; col<columnObject.size(); col++) {
+                    text[row][col+1] = rowFn.apply(columnObject.get(col));
+                    widths[col+1] = Math.max(widths[col+1], text[row][col+1].length());
+                }
+            }
+            Column[] columns = new Column[headerText.size()];
+            String[] seps = new String[headerText.size()];
+            for (int i=0; i<headerText.size(); i++) {
+                widths[i] = Math.max(widths[i], headerText.get(i).length());
+                columns[i] = new Column(widths[i]+2, 2, Column.Overflow.WRAP);
+                seps[i] = new String(new char[widths[i]]).replace('\0', '-');
+            }
+            TextTable table = TextTable.forColumns(help.colorScheme(), columns);
+            table.addRowValues(headerText.toArray(new String[0]));
+            table.addRowValues(seps);
+            for (int row=0; row<rowLabels.size(); row++) {
+                table.addRowValues(text[row]);
+            }
+            return table;
         }
     }
 }
