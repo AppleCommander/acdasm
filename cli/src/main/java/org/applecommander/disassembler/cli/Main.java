@@ -121,8 +121,8 @@ public class Main implements Callable<Integer> {
                             }
                             return String.join(",", set.defaults().libraryLabels());
                         })
-                        .row("Bytes/Instruction", set -> String.format("%d", set.defaults().bytesPerInstruction()))
-                        .row("Descriptions?", set -> set.defaults().includeDescription() ? "No" : "Yes")
+                        .row("Max Bytes/Instruction", set -> String.format("%d", set.defaults().bytesPerInstruction()))
+                        .row("Show Descriptions?", set -> set.defaults().includeDescription() ? "Yes" : "No")
                         .build());
             pw.println("Library Groups:");
             pw.printf("  %s\n", String.join(", ", Disassembler.labelGroups()));
@@ -274,7 +274,7 @@ public class Main implements Callable<Integer> {
             }
         }
         System.out.printf(" %-10.10s ", labels.getOrDefault(instruction.address(), ""));
-        System.out.printf("%-5.5s ", instruction.mnemonic());
+        System.out.printf("%-5s ", instruction.mnemonic());
         System.out.printf("%-30s ", instruction.operands().stream().map(operand -> {
                 if (operand.address().isPresent() && labels.containsKey(operand.address().get())) {
                     return operand.format(labels.get(operand.address().get()));
@@ -314,7 +314,7 @@ public class Main implements Callable<Integer> {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" %-5.5s ", instruction.mnemonic());
+        System.out.printf(" %-5s ", instruction.mnemonic());
         System.out.printf("%-30s", instruction.operands().stream().map(Instruction.Operand::format)
                 .collect(Collectors.joining(",")));
         if (descriptions) {
