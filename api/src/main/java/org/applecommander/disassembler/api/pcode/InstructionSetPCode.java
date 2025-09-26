@@ -89,19 +89,12 @@ public class InstructionSetPCode implements InstructionSet {
     private InstructionSetPCode() {}
 
     @Override
-    public int defaultStartAddress() {
-        // Relative to the file itself
-        return 0;
-    }
-
-    @Override
-    public int suggestedBytesPerInstruction() {
-        return 8;
-    }
-
-    @Override
-    public List<String> defaultLibraryLabels() {
-        return List.of();
+    public Defaults defaults() {
+        return Defaults.builder()
+                .startAddress(0)    // relative to the file itself
+                .bytesPerInstruction(8)
+                .includeDescription(true)
+                .get();
     }
 
     @Override

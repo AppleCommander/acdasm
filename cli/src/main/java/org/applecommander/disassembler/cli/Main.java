@@ -48,14 +48,14 @@ import picocli.CommandLine.Parameters;
 @Command(name = "acdasm", mixinStandardHelpOptions = true, versionProvider = VersionProvider.class,
          descriptionHeading = "%n",
          optionListHeading = "%nOptions:%n",
-         description = "AC Disassembler.")
+         description = "AppleCommander Disassembler.%n")
 public class Main implements Callable<Integer> {
     @Option(names = "--debug", description = "Print stack traces")
     public static boolean debug;
 
     @Option(names = { "-a", "--addr", "--origin" }, converter = IntegerTypeConverter.class,
             description = "Set start address for application.")
-    private int startAddress = -1;
+    private Integer startAddress;
     
     @Option(names = { "--offset" }, converter = IntegerTypeConverter.class, 
             description = "Skip offset bytes into binary before disassembling.")
@@ -81,7 +81,7 @@ public class Main implements Callable<Integer> {
     private final CpuSelection cpuSelection = new CpuSelection();
 
     @Option(names = { "--descriptions" }, negatable = true, description = "Include opcode descriptions.")
-    private boolean descriptions;
+    private Boolean descriptions;
     
     @Parameters(arity = "1", description = "File to disassemble.")
     private Path file;
@@ -100,8 +100,8 @@ public class Main implements Callable<Integer> {
     public Integer call() throws Exception {
         final int MAX_ADDRESS = 0xFFFF;
 
-        if (startAddress == -1) {
-            startAddress = cpuSelection.instructionSet.defaultStartAddress();
+        if (startAddress == null) {
+            startAddress = cpuSelection.instructionSet.defaults().startAddress();
         }
 
         if (startAddress < 0 || startAddress > MAX_ADDRESS) {
@@ -118,7 +118,7 @@ public class Main implements Callable<Integer> {
 
         // CPU library labels defaults:
         if (libraries == null) {
-            libraries = cpuSelection.instructionSet.defaultLibraryLabels();
+            libraries = cpuSelection.instructionSet.defaults().libraryLabels();
         }
         // Remap the keywords:  (note: Most libraries will be defined with "List.of('All|None')" which is immutable)
         if (libraries.contains("All")) {
@@ -127,6 +127,10 @@ public class Main implements Callable<Integer> {
         }
         else if (libraries.contains("None")) {
             libraries = new ArrayList<>();
+        }
+
+        if (descriptions == null) {
+            descriptions = cpuSelection.instructionSet.defaults().includeDescription();
         }
 
         switch (this.cpuSelection.type) {
@@ -220,7 +224,7 @@ public class Main implements Callable<Integer> {
     }
 
     public void emitWithLabels(Instruction instruction) {
-        int bytesPerLine = cpuSelection.instructionSet.suggestedBytesPerInstruction();
+        int bytesPerLine = cpuSelection.instructionSet.defaults().bytesPerInstruction();
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
@@ -261,7 +265,7 @@ public class Main implements Callable<Integer> {
         }
     }
     public void emitRaw(Instruction instruction) {
-        int bytesPerLine = cpuSelection.instructionSet.suggestedBytesPerInstruction();
+        int bytesPerLine = cpuSelection.instructionSet.defaults().bytesPerInstruction();
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
@@ -336,23 +340,15 @@ public class Main implements Callable<Integer> {
             // A fake InstructionSet to prevent accidental NPE's.
             this.instructionSet = new InstructionSet() {
                 @Override
-                public int defaultStartAddress() {
-                    return 0;
-                }
-
-                @Override
-                public List<String> defaultLibraryLabels() {
-                    return List.of();
+                public Defaults defaults() {
+                    return Defaults.builder()
+                            .includeDescription(true)
+                            .get();
                 }
 
                 @Override
                 public List<Instruction> decode(Program program) {
                     return List.of();
-                }
-
-                @Override
-                public int suggestedBytesPerInstruction() {
-                    return 0;
                 }
 
                 @Override

@@ -44,18 +44,12 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
-    public int defaultStartAddress() {
-        return 0x300;
-    }
-
-    @Override
-    public List<String> defaultLibraryLabels() {
-        return List.of("All");
-    }
-
-    @Override
-    public int suggestedBytesPerInstruction() {
-        return Math.max(mos6502.suggestedBytesPerInstruction(), sweet16.suggestedBytesPerInstruction());
+    public Defaults defaults() {
+        return Defaults.builder()
+                .startAddress(0x300)
+                .libraryLabels("All")
+                .bytesPerInstruction(3)
+                .get();
     }
 
     @Override

@@ -33,18 +33,12 @@ public class InstructionSetSWEET16 implements InstructionSet {
     }
 
     @Override
-    public List<String> defaultLibraryLabels() {
-        return List.of("All");
-    }
-
-    @Override
-    public int defaultStartAddress() {
-        return 0x300;
-    }
-
-    @Override
-    public int suggestedBytesPerInstruction() {
-        return 3;
+    public Defaults defaults() {
+        return Defaults.builder()
+                .startAddress(0x300)
+                .libraryLabels("All")
+                .bytesPerInstruction(3)
+                .get();
     }
 
     @Override
