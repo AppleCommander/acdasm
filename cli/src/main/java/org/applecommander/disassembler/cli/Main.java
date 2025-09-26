@@ -240,7 +240,7 @@ public class Main implements Callable<Integer> {
             })
             .collect(Collectors.joining(",")));
 
-        if (code.length >= bytesPerLine) {
+        if (code.length > bytesPerLine) {
             for (int i=bytesPerLine; i<code.length; i++) {
                 if (i % bytesPerLine == 0) {
                     if (i > bytesPerLine) System.out.println();
@@ -267,7 +267,7 @@ public class Main implements Callable<Integer> {
         System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
                 .collect(Collectors.joining(",")));
 
-        if (code.length >= bytesPerLine) {
+        if (code.length > bytesPerLine) {
             for (int i=bytesPerLine; i<code.length; i++) {
                 if (i % bytesPerLine == 0) {
                     if (i > bytesPerLine) System.out.println();
