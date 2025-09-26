@@ -16,6 +16,8 @@
  */
 package org.applecommander.disassembler.cli;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
@@ -76,9 +78,8 @@ public class Main implements Callable<Integer> {
     private Consumer<Instruction> emitter = this::emitWithLabels;
     
     @Option(names = { "-l", "--library" }, split = ",", paramLabel = "<library>", description =
-            "Select which library labels to load. Use 'All' to select all. Each CPU has a default set " +
-            "(most are 'All' except Z80).  Options are: 'F800', 'Applesoft', 'ProDOS', 'DOS', 'DISKII'. " +
-            "'None' may also be used to turn library labels off.")
+            "Select which library labels to load. Each CPU has a default set. " +
+            "Use 'All' to select all. 'None' may also be used to turn library labels off.")
     private List<String> libraries;
 
     @ArgGroup(heading = "%nCPU Selection:%n")
@@ -95,35 +96,38 @@ public class Main implements Callable<Integer> {
     
     public static void main(String[] args) {
         CommandLine cl = new CommandLine(new Main());
-        cl.getHelpSectionMap().put(SECTION_KEY_FOOTER_HEADING,
-                help -> help.createHeading("%nProcessor Defaults:%n"));
         cl.getHelpSectionMap().put(SECTION_KEY_FOOTER, help -> {
-                    TextTable table = TableBuilder.with(help)
-                            .textHeader("Default Value")
-                            .textHeader("6502", InstructionSet6502.for6502())
-                            .textHeader("6502X", InstructionSet6502.for6502withIllegalInstructions())
-                            .textHeader("6502S", InstructionSet6502Switching.withSwitching())
-                            .textHeader("65C02", InstructionSet6502.for65C02())
-                            .textHeader("SWEET-16", InstructionSetSWEET16.forSWEET16())
-                            .textHeader("Z80", InstructionSetZ80.forZ80())
-                            .textHeader("P-CODE", InstructionSetPCode.forApplePascal())
-                            .row("Start Address", set -> {
-                                if (set instanceof InstructionSetZ80) {
-                                    return String.format("%04xH", set.defaults().startAddress());
-                                }
-                                return String.format("$%04X", set.defaults().startAddress());
-                            })
-                            .row("Library Labels", set -> {
-                                if (set.defaults().libraryLabels().isEmpty()) {
-                                    return "None";
-                                }
-                                return String.join(",", set.defaults().libraryLabels());
-                            })
-                            .row("Bytes/Instruction", set -> String.format("%d", set.defaults().bytesPerInstruction()))
-                            .row("Descriptions?", set -> set.defaults().includeDescription() ? "No" : "Yes")
-                            .build();
-                    return table.toString();
-                });
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            pw.println("\nProcessor Defaults:");
+            pw.println(TableBuilder.with(help)
+                        .textHeader("Default Value")
+                        .textHeader("6502", InstructionSet6502.for6502())
+                        .textHeader("6502X", InstructionSet6502.for6502withIllegalInstructions())
+                        .textHeader("6502S", InstructionSet6502Switching.withSwitching())
+                        .textHeader("65C02", InstructionSet6502.for65C02())
+                        .textHeader("SWEET-16", InstructionSetSWEET16.forSWEET16())
+                        .textHeader("Z80", InstructionSetZ80.forZ80())
+                        .textHeader("P-CODE", InstructionSetPCode.forApplePascal())
+                        .row("Start Address", set -> {
+                            if (set instanceof InstructionSetZ80) {
+                                return String.format("%04xH", set.defaults().startAddress());
+                            }
+                            return String.format("$%04X", set.defaults().startAddress());
+                        })
+                        .row("Library Labels", set -> {
+                            if (set.defaults().libraryLabels().isEmpty()) {
+                                return "None";
+                            }
+                            return String.join(",", set.defaults().libraryLabels());
+                        })
+                        .row("Bytes/Instruction", set -> String.format("%d", set.defaults().bytesPerInstruction()))
+                        .row("Descriptions?", set -> set.defaults().includeDescription() ? "No" : "Yes")
+                        .build());
+            pw.println("Library Groups:");
+            pw.printf("  %s\n", String.join(", ", Disassembler.labelGroups()));
+            return sw.toString();
+        });
         cl.setExecutionExceptionHandler(new PrintExceptionMessageHandler());
 
         int exitCode = cl.execute(args);
@@ -429,7 +433,7 @@ public class Main implements Callable<Integer> {
             assert rowFns.size() < headerText.size();
             return this;
         }
-        public TextTable build() {
+        public String build() {
             String[][] text = new String[rowLabels.size()][headerText.size()];
             int[] widths = new int[headerText.size()];
             for (int row=0; row<rowLabels.size(); row++) {
@@ -454,7 +458,7 @@ public class Main implements Callable<Integer> {
             for (int row=0; row<rowLabels.size(); row++) {
                 table.addRowValues(text[row]);
             }
-            return table;
+            return table.toString();
         }
     }
 }

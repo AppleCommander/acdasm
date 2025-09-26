@@ -40,6 +40,9 @@ public class Disassembler {
             throw new UncheckedIOException(e);
         }
     }
+    public static Set<String> labelGroups() {
+        return ini.keySet();
+    }
 
     private int startAddress;
     private int bytesToSkip;
