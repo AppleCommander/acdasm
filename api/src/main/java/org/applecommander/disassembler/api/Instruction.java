@@ -20,7 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public record Instruction(int address, byte[] code, String mnemonic, List<Operand> operands) {
+public record Instruction(int address, byte[] code, String mnemonic, List<Operand> operands,
+                          Optional<String> description) {
+
     public Optional<Operand> addressRef() {
         for (Operand operand : operands) {
             if (operand.address().isPresent()) {
@@ -48,6 +50,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         private byte[] code = new byte[0];
         private String mnemonic = "";
         private final List<Operand> operands = new ArrayList<>();
+        private String description;
 
         private Builder(int address) {
             this.address = address;
@@ -76,6 +79,11 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             operands.add(new OpBuilder("%s").value(fmt, values).get());
             return this;
         }
+        public Builder description(String description) {
+            assert description != null;
+            this.description = description;
+            return this;
+        }
         public Optional<Operand> addressRef() {
             for (Operand operand : operands) {
                 if (operand.address().isPresent()) {
@@ -85,7 +93,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             return Optional.empty();
         }
         public Instruction get() {
-            return new Instruction(address, code, mnemonic, operands);
+            return new Instruction(address, code, mnemonic, operands, Optional.ofNullable(description));
         }
     }
 

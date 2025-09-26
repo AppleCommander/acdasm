@@ -79,6 +79,9 @@ public class Main implements Callable<Integer> {
 
     @ArgGroup(heading = "%nCPU Selection:%n")
     private final CpuSelection cpuSelection = new CpuSelection();
+
+    @Option(names = { "--descriptions" }, negatable = true, description = "Include opcode descriptions.")
+    private boolean descriptions;
     
     @Parameters(arity = "1", description = "File to disassemble.")
     private Path file;
@@ -230,7 +233,7 @@ public class Main implements Callable<Integer> {
         }
         System.out.printf(" %-10.10s ", labels.getOrDefault(instruction.address(), ""));
         System.out.printf("%-5.5s ", instruction.mnemonic());
-        System.out.printf("%s\n", instruction.operands().stream().map(operand -> {
+        System.out.printf("%-30s ", instruction.operands().stream().map(operand -> {
                 if (operand.address().isPresent() && labels.containsKey(operand.address().get())) {
                     return operand.format(labels.get(operand.address().get()));
                 }
@@ -239,6 +242,12 @@ public class Main implements Callable<Integer> {
                 }
             })
             .collect(Collectors.joining(",")));
+        if (descriptions) {
+            instruction.description().ifPresent(description -> {
+                System.out.printf("; %s", description);
+            });
+        }
+        System.out.println();
 
         if (code.length > bytesPerLine) {
             for (int i=bytesPerLine; i<code.length; i++) {
@@ -264,8 +273,14 @@ public class Main implements Callable<Integer> {
             }
         }
         System.out.printf(" %-5.5s ", instruction.mnemonic());
-        System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
+        System.out.printf("%-30s", instruction.operands().stream().map(Instruction.Operand::format)
                 .collect(Collectors.joining(",")));
+        if (descriptions) {
+            instruction.description().ifPresent(description -> {
+                System.out.printf("; %s", description);
+            });
+        }
+        System.out.println();
 
         if (code.length > bytesPerLine) {
             for (int i=bytesPerLine; i<code.length; i++) {

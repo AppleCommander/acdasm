@@ -16,10 +16,16 @@
  */
 package org.applecommander.disassembler.api.pcode;
 
+import org.applecommander.disassembler.api.Disassembler;
 import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
+import org.ini4j.Ini;
+import org.ini4j.Profile;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +36,18 @@ import static org.applecommander.disassembler.api.pcode.InstructionSetPCode.Flag
 public class InstructionSetPCode implements InstructionSet {
     public static InstructionSetPCode forApplePascal() {
         return new InstructionSetPCode();
+    }
+
+    private static final Profile.Section DESCRIPTIONS;
+    static {
+        try (InputStream is = Disassembler.class.getResourceAsStream("/instructions.ini")) {
+            Ini ini = new Ini();
+            ini.load(is);
+            DESCRIPTIONS = ini.get("pcode");
+            assert DESCRIPTIONS != null;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     // List of standard procedures.
@@ -161,6 +179,11 @@ public class InstructionSetPCode implements InstructionSet {
             }
             // Catch stuff with constants
             opcode.impliedValue.ifPresent(n -> builder.opValue("%d", n));
+
+            // Apply description last since CSP changes the opcode mnemonic
+            if (DESCRIPTIONS.containsKey(builder.mnemonic())) {
+                builder.description(DESCRIPTIONS.get(builder.mnemonic()));
+            }
 
             builder.code(procedure.bytesRead());
             assembly.add(builder.get());
