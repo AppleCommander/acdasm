@@ -92,6 +92,7 @@ public class Disassembler {
         }
         public List<Instruction> decode(Map<Integer,String> labels) {
             assert labels != null;
+            assert disassembler.instructionSet != null;
             // merge in all selected sections
             for (String name : sections) {
                 Section section = ini.get(name);
