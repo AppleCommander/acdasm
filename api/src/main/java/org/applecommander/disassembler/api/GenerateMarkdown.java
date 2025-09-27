@@ -27,6 +27,10 @@ import java.util.Map;
 
 import static org.applecommander.disassembler.api.InstructionSet.OpcodeTable;
 
+/**
+ * A utility class to generate markdown files for most instruction sets. These can then be used as an eyeball-level
+ * test to validate or document how the decoding works.
+ */
 public class GenerateMarkdown {
     public static void main(String[] args) throws IOException {
         Map<String,InstructionSet> instructionSets = Map.of(
