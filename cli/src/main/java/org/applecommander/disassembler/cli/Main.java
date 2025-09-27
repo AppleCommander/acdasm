@@ -161,7 +161,7 @@ public class Main implements Callable<Integer> {
         // Remap the keywords:  (note: Most libraries will be defined with "List.of('All|None')" which is immutable)
         if (libraries.contains("All")) {
             libraries = new ArrayList<>();
-            libraries.addAll(Disassembler.sections());
+            libraries.addAll(Disassembler.labelGroups());
         }
         else if (libraries.contains("None")) {
             libraries = new ArrayList<>();

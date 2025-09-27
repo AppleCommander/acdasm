@@ -143,8 +143,4 @@ public class Disassembler {
             return Optional.of(Integer.valueOf(value));
         }
     }
-    
-    public static Set<String> sections() {
-        return ini.keySet();
-    }
 }
