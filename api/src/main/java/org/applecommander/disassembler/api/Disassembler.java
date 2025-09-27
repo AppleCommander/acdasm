@@ -123,19 +123,6 @@ public class Disassembler {
             disassembler.instructionSet = instructionSet;
             return this;
         }
-        public Builder use6502() {
-            disassembler.instructionSet = InstructionSet6502.for6502();
-            return this;
-        }
-        public Builder use6502WithIllegalOpcodes() {
-            disassembler.instructionSet = InstructionSet6502.for6502withIllegalInstructions();
-            return this;
-        }
-        public Builder use65C02() {
-            disassembler.instructionSet = InstructionSet6502.for65C02();
-            return this;
-        }
-        
         public Builder section(List<String> names) {
             if (names != null) {
                 this.sections.addAll(names);
