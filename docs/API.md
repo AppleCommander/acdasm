@@ -66,6 +66,12 @@ If you want the labels, create a `Map<String,Integer>` to capture them and pass 
 
 ## Important Interfaces/Classes/Records 
 
+The `Dissassembler` decode interface returns a list of `Instruction` components. Each component contains
+the address, bytes involved, the opcode mnemonic, and a list of operands. The operands have two format
+options: `format()` will format the operand as expected while `format(String)` will replace an address
+with the label instead. To determine if an operand contains an address, the `address()` method returns
+a Java Optional class, so use it as applicable as the return value is never null.
+
 ```mermaid
 classDiagram
     Operand --o Instruction
@@ -80,6 +86,7 @@ classDiagram
         +Optional~String~ description()
     }
     class Operand {
+        +Optional<Integer> address()
         +String format()
         +String format(String label)
     }
@@ -99,3 +106,10 @@ classDiagram
         +boolean includeDescription()
     }
 ```
+
+If there is a new instruction set to add, implement the `InstructionSet`. The instruction set also
+supplies `Defaults` that have various attributes that can be passed into the `Disassembler`.
+
+> Note that an instruction set not only decodes a program but also supplies opcode examples for 
+> the `GenerateMarkdown` program. Since the instruction sets are manually added into this 
+> application, the `opcodeTables()` method can likely be ignored.
