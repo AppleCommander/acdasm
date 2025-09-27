@@ -5,6 +5,10 @@
 
 This project is primarily created to supply a reusable Java disassembler for the AppleCommander project.
 
+## API
+
+The disassembler can be used in any Java application. Please review the [API](docs/API.md) section for details.
+
 ## CLI
 
 ```
