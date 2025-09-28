@@ -27,7 +27,9 @@ public class IntegerTypeConverter implements ITypeConverter<Integer> {
 		} else if (value.startsWith("$")) {
 			return Integer.valueOf(value.substring(1), 16);
 		} else if (value.startsWith("0x") || value.startsWith("0X")) {
-			return Integer.valueOf(value.substring(2), 16);
+            return Integer.valueOf(value.substring(2), 16);
+        } else if (value.endsWith("H") || value.endsWith("h")) {
+            return Integer.valueOf(value.substring(0, value.length()-1), 16);
 		} else {
 			return Integer.valueOf(value);
 		}

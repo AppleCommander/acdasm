@@ -145,7 +145,7 @@ public class InstructionSetTest {
                 return Optional.empty();
             });
 
-            Function<String,Optional<Integer>> converter;
+            final Function<String,Optional<Integer>> converter;
 
             Mode(Function<String,Optional<Integer>> converter) {
                 this.converter = converter;

@@ -20,7 +20,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public record Instruction(int address, byte[] code, String mnemonic, List<Operand> operands) {
+/**
+ * An instruction represents one decoded lines. It potentially could also be a "directive" (not really, but useful
+ * for humans); for example the switching instruction set uses ".6502" and ".SWEET16" to indicate mode switches.
+ *
+ * @param address The starting address for this instruction.
+ * @param code The raw bytes representing the instruction.
+ * @param mnemonic The opcode mnemonic.
+ * @param operands List of operands, assumed to be joined with ",".
+ * @param description An optional description given to the opcode.
+ */
+public record Instruction(int address, byte[] code, String mnemonic, List<Operand> operands,
+                          Optional<String> description) {
+
     public Optional<Operand> addressRef() {
         for (Operand operand : operands) {
             if (operand.address().isPresent()) {
@@ -30,16 +42,40 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         return Optional.empty();
     }
 
-
+    /**
+     * An operand represents a single operand.
+     *
+     * @param opFmt Operand format string. This should be with "%s" and include any formatting.
+     *              Example: Immediate addressing would be "#%s".
+     * @param value The formatted value. It will be combined with the operand format string, unless a label is requested.
+     * @param address An optional address. The disassembler uses this to identify labels.
+     */
     public record Operand(String opFmt, String value, Optional<Integer> address) {
+        /** Format the operand with the given value. */
         public String format() {
             return String.format(opFmt, value);
         }
+        /** Format the operand but use the given label instead of the value. */
         public String format(String label) {
             return String.format(opFmt, label);
         }
     }
 
+    /**
+     * Initiate construction of an instruction.
+     * <p/>
+     * For example (this is fabricated but also gives an idea):
+     * <pre>
+     * {@code
+     * int operandValue = program.peekUnsignedByte(1);
+     * Instruction inst = Instruction.at(program.currentAddress())
+     *                               .code(program.read(2))
+     *                               .mnemonic("LDA")
+     *                               .opValue("#%s", "%d", operandValue)
+     *                               .get();
+     * }
+     * </pre>
+     */
     public static Builder at(int address) {
         return new Builder(address);
     }
@@ -48,6 +84,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         private byte[] code = new byte[0];
         private String mnemonic = "";
         private final List<Operand> operands = new ArrayList<>();
+        private String description;
 
         private Builder(int address) {
             this.address = address;
@@ -76,6 +113,11 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             operands.add(new OpBuilder("%s").value(fmt, values).get());
             return this;
         }
+        public Builder description(String description) {
+            assert description != null;
+            this.description = description;
+            return this;
+        }
         public Optional<Operand> addressRef() {
             for (Operand operand : operands) {
                 if (operand.address().isPresent()) {
@@ -85,7 +127,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             return Optional.empty();
         }
         public Instruction get() {
-            return new Instruction(address, code, mnemonic, operands);
+            return new Instruction(address, code, mnemonic, operands, Optional.ofNullable(description));
         }
     }
 

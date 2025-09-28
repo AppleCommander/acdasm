@@ -19,6 +19,11 @@ package org.applecommander.disassembler.api;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Program is a state class that tracks where decoding is, what the address is, and provides
+ * a few helper methods to assist with various data types. Note that "get" reads from an absolute
+ * position (always from 0) while "peek" reads from a relative position (from offset).
+ */
 public class Program {
     static final int ADDRESS_SPACE = 64 * 1024; //64k Address Space
 
@@ -33,24 +38,31 @@ public class Program {
         this.offset = 0;
     }
 
+    /** Length of code. */
     public int length() {
         return code.length;
     }
+    /** Test if there are more bytes to process. */
     public boolean hasMore() {
         return offset < code.length;
     }
+    /** Get an unsigned byte at the current offset. Does not advance the offset value. */
     public int peekUnsignedByte() {
         return peekUnsignedByte(0);
     }
+    /** Get an unsigned byte at the current offset + n. Does not advance the offset value. */
     public int peekUnsignedByte(int n) {
         return offset+n < code.length ? Byte.toUnsignedInt(code[offset+n]) : 0;
     }
+    /** Get an unsigned short (2 bytes, little endian) at the current offset + n. Does not advance the offset value. */
     public int peekUnsignedShort(int n) {
         return peekUnsignedByte(n) | peekUnsignedByte(n+1) << 8;
     }
+    /** Get a *signed* byte at the current offset + n. Does not advance the offset value. */
     public int peekSignedByte(int n) {
         return offset+n < code.length ? code[offset+n] : 0;
     }
+    /** Read n bytes. Advances offset. Used to read all bytes that are part of an instruction. */
     public byte[] read(int n) {
         byte[] x = Arrays.copyOfRange(code, offset, offset+n);
         offset += n;
@@ -60,12 +72,15 @@ public class Program {
     public int getUnsignedByte(int n) {
         return n < code.length ? Byte.toUnsignedInt(code[n]) : 0;
     }
+    /** Get the current offset. */
     public int currentOffset() {
         return offset;
     }
+    /** Get the base address. This is the initial address passed into the constructor. */
     public int baseAddress() {
         return baseAddress;
     }
+    /** Get the current address. Note that the address is wrapped across the address space. Currently, 64K. */
     public int currentAddress() {
         return (baseAddress+offset) % ADDRESS_SPACE; //wrap around to 0 if address exceeds the address space
     }

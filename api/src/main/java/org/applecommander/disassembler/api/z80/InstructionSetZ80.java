@@ -35,19 +35,11 @@ public class InstructionSetZ80 implements InstructionSet {
     private InstructionSetZ80() {}
 
     @Override
-    public int defaultStartAddress() {
-        return 0x100;   // This is the start address for COM files
-    }
-
-    @Override
-    public List<String> defaultLibraryLabels() {
-        // TBD. No explicit labels defined.
-        return List.of();
-    }
-
-    @Override
-    public int suggestedBytesPerInstruction() {
-        return 5;
+    public Defaults defaults() {
+        return Defaults.builder()
+                .startAddress(0x100)        // This it the start address for COM files
+                .bytesPerInstruction(5)
+                .get();
     }
 
     @Override

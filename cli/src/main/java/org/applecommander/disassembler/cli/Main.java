@@ -16,6 +16,8 @@
  */
 package org.applecommander.disassembler.cli;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
@@ -24,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.applecommander.disassembler.api.Disassembler;
@@ -44,18 +47,21 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Help.*;
+
+import static picocli.CommandLine.Model.UsageMessageSpec.*;
 
 @Command(name = "acdasm", mixinStandardHelpOptions = true, versionProvider = VersionProvider.class,
          descriptionHeading = "%n",
          optionListHeading = "%nOptions:%n",
-         description = "AC Disassembler.")
+         description = "AppleCommander Disassembler.%n")
 public class Main implements Callable<Integer> {
     @Option(names = "--debug", description = "Print stack traces")
     public static boolean debug;
 
     @Option(names = { "-a", "--addr", "--origin" }, converter = IntegerTypeConverter.class,
             description = "Set start address for application.")
-    private int startAddress = -1;
+    private Integer startAddress;
     
     @Option(names = { "--offset" }, converter = IntegerTypeConverter.class, 
             description = "Skip offset bytes into binary before disassembling.")
@@ -72,13 +78,15 @@ public class Main implements Callable<Integer> {
     private Consumer<Instruction> emitter = this::emitWithLabels;
     
     @Option(names = { "-l", "--library" }, split = ",", paramLabel = "<library>", description =
-            "Select which library labels to load. Use 'All' to select all. Each CPU has a default set " +
-            "(most are 'All' except Z80).  Options are: 'F800', 'Applesoft', 'ProDOS', 'DOS', 'DISKII'. " +
-            "'None' may also be used to turn library labels off.")
+            "Select which library labels to load. Each CPU has a default set. " +
+            "Use 'All' to select all. 'None' may also be used to turn library labels off.")
     private List<String> libraries;
 
     @ArgGroup(heading = "%nCPU Selection:%n")
     private final CpuSelection cpuSelection = new CpuSelection();
+
+    @Option(names = { "--descriptions" }, negatable = true, description = "Include opcode descriptions.")
+    private Boolean descriptions;
     
     @Parameters(arity = "1", description = "File to disassemble.")
     private Path file;
@@ -87,18 +95,51 @@ public class Main implements Callable<Integer> {
     private final Map<Integer,String> labels = new HashMap<>();
     
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new Main())
-                           .setExecutionExceptionHandler(new PrintExceptionMessageHandler())
-                           .execute(args);
+        CommandLine cl = new CommandLine(new Main());
+        cl.getHelpSectionMap().put(SECTION_KEY_FOOTER, help -> {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            pw.println("\nProcessor Defaults:");
+            pw.println(TableBuilder.with(help)
+                        .textHeader("Default Value")
+                        .textHeader("6502", InstructionSet6502.for6502())
+                        .textHeader("6502X", InstructionSet6502.for6502withIllegalInstructions())
+                        .textHeader("6502S", InstructionSet6502Switching.withSwitching())
+                        .textHeader("65C02", InstructionSet6502.for65C02())
+                        .textHeader("SWEET-16", InstructionSetSWEET16.forSWEET16())
+                        .textHeader("Z80", InstructionSetZ80.forZ80())
+                        .textHeader("P-CODE", InstructionSetPCode.forApplePascal())
+                        .row("Start Address", set -> {
+                            if (set instanceof InstructionSetZ80) {
+                                return String.format("%04xH", set.defaults().startAddress());
+                            }
+                            return String.format("$%04X", set.defaults().startAddress());
+                        })
+                        .row("Library Labels", set -> {
+                            if (set.defaults().libraryLabels().isEmpty()) {
+                                return "None";
+                            }
+                            return String.join(",", set.defaults().libraryLabels());
+                        })
+                        .row("Max Bytes/Instruction", set -> String.format("%d", set.defaults().bytesPerInstruction()))
+                        .row("Show Descriptions?", set -> set.defaults().includeDescription() ? "Yes" : "No")
+                        .build());
+            pw.println("Library Groups:");
+            pw.printf("  %s\n", String.join(", ", Disassembler.labelGroups()));
+            return sw.toString();
+        });
+        cl.setExecutionExceptionHandler(new PrintExceptionMessageHandler());
+
+        int exitCode = cl.execute(args);
         System.exit(exitCode);
     }
-    
+
     @Override
     public Integer call() throws Exception {
         final int MAX_ADDRESS = 0xFFFF;
 
-        if (startAddress == -1) {
-            startAddress = cpuSelection.instructionSet.defaultStartAddress();
+        if (startAddress == null) {
+            startAddress = cpuSelection.instructionSet.defaults().startAddress();
         }
 
         if (startAddress < 0 || startAddress > MAX_ADDRESS) {
@@ -115,15 +156,19 @@ public class Main implements Callable<Integer> {
 
         // CPU library labels defaults:
         if (libraries == null) {
-            libraries = cpuSelection.instructionSet.defaultLibraryLabels();
+            libraries = cpuSelection.instructionSet.defaults().libraryLabels();
         }
         // Remap the keywords:  (note: Most libraries will be defined with "List.of('All|None')" which is immutable)
         if (libraries.contains("All")) {
             libraries = new ArrayList<>();
-            libraries.addAll(Disassembler.sections());
+            libraries.addAll(Disassembler.labelGroups());
         }
         else if (libraries.contains("None")) {
             libraries = new ArrayList<>();
+        }
+
+        if (descriptions == null) {
+            descriptions = cpuSelection.instructionSet.defaults().includeDescription();
         }
 
         switch (this.cpuSelection.type) {
@@ -217,7 +262,7 @@ public class Main implements Callable<Integer> {
     }
 
     public void emitWithLabels(Instruction instruction) {
-        int bytesPerLine = cpuSelection.instructionSet.suggestedBytesPerInstruction();
+        int bytesPerLine = cpuSelection.instructionSet.defaults().bytesPerInstruction();
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
@@ -229,8 +274,8 @@ public class Main implements Callable<Integer> {
             }
         }
         System.out.printf(" %-10.10s ", labels.getOrDefault(instruction.address(), ""));
-        System.out.printf("%-5.5s ", instruction.mnemonic());
-        System.out.printf("%s\n", instruction.operands().stream().map(operand -> {
+        System.out.printf("%-5s ", instruction.mnemonic());
+        System.out.printf("%-30s ", instruction.operands().stream().map(operand -> {
                 if (operand.address().isPresent() && labels.containsKey(operand.address().get())) {
                     return operand.format(labels.get(operand.address().get()));
                 }
@@ -239,8 +284,14 @@ public class Main implements Callable<Integer> {
                 }
             })
             .collect(Collectors.joining(",")));
+        if (descriptions) {
+            instruction.description().ifPresent(description -> {
+                System.out.printf("; %s", description);
+            });
+        }
+        System.out.println();
 
-        if (code.length >= bytesPerLine) {
+        if (code.length > bytesPerLine) {
             for (int i=bytesPerLine; i<code.length; i++) {
                 if (i % bytesPerLine == 0) {
                     if (i > bytesPerLine) System.out.println();
@@ -252,7 +303,7 @@ public class Main implements Callable<Integer> {
         }
     }
     public void emitRaw(Instruction instruction) {
-        int bytesPerLine = cpuSelection.instructionSet.suggestedBytesPerInstruction();
+        int bytesPerLine = cpuSelection.instructionSet.defaults().bytesPerInstruction();
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
@@ -263,11 +314,17 @@ public class Main implements Callable<Integer> {
                 System.out.printf("%02X ", code[i]);
             }
         }
-        System.out.printf(" %-5.5s ", instruction.mnemonic());
-        System.out.printf("%s\n", instruction.operands().stream().map(Instruction.Operand::format)
+        System.out.printf(" %-5s ", instruction.mnemonic());
+        System.out.printf("%-30s", instruction.operands().stream().map(Instruction.Operand::format)
                 .collect(Collectors.joining(",")));
+        if (descriptions) {
+            instruction.description().ifPresent(description -> {
+                System.out.printf("; %s", description);
+            });
+        }
+        System.out.println();
 
-        if (code.length >= bytesPerLine) {
+        if (code.length > bytesPerLine) {
             for (int i=bytesPerLine; i<code.length; i++) {
                 if (i % bytesPerLine == 0) {
                     if (i > bytesPerLine) System.out.println();
@@ -321,23 +378,15 @@ public class Main implements Callable<Integer> {
             // A fake InstructionSet to prevent accidental NPE's.
             this.instructionSet = new InstructionSet() {
                 @Override
-                public int defaultStartAddress() {
-                    return 0;
-                }
-
-                @Override
-                public List<String> defaultLibraryLabels() {
-                    return List.of();
+                public Defaults defaults() {
+                    return Defaults.builder()
+                            .includeDescription(true)
+                            .get();
                 }
 
                 @Override
                 public List<Instruction> decode(Program program) {
                     return List.of();
-                }
-
-                @Override
-                public int suggestedBytesPerInstruction() {
-                    return 0;
                 }
 
                 @Override
@@ -348,6 +397,68 @@ public class Main implements Callable<Integer> {
         }
         enum Type {
             ASSEMBLY, CODEFILE;
+        }
+    }
+
+    static class TableBuilder {
+        public static TableBuilder with(CommandLine.Help help) {
+            return new TableBuilder(help);
+        }
+
+        private final CommandLine.Help help;
+        private final List<String> headerText = new ArrayList<>();
+        private final List<InstructionSet> columnObject = new ArrayList<>();
+        private final List<String> rowLabels = new ArrayList<>();
+        private final List<Function<InstructionSet,String>> rowFns = new ArrayList<>();
+
+        private TableBuilder(CommandLine.Help help) {
+            this.help = help;
+        }
+        public TableBuilder textHeader(String text) {
+            assert headerText.isEmpty();
+            headerText.add(text);
+            return this;
+        }
+        public TableBuilder textHeader(String text, InstructionSet instructionSet) {
+            assert !headerText.isEmpty();
+            assert headerText.size() == columnObject.size()+1;
+            headerText.add(text);
+            columnObject.add(instructionSet);
+            return this;
+        }
+        public TableBuilder row(String text, Function<InstructionSet,String> supplier) {
+            rowLabels.add(text);
+            rowFns.add(supplier);
+            assert rowLabels.size() <= headerText.size();
+            assert rowFns.size() < headerText.size();
+            return this;
+        }
+        public String build() {
+            String[][] text = new String[rowLabels.size()][headerText.size()];
+            int[] widths = new int[headerText.size()];
+            for (int row=0; row<rowLabels.size(); row++) {
+                text[row][0] = rowLabels.get(row);
+                widths[0] = Math.max(widths[0], text[row][0].length());
+                var rowFn = rowFns.get(row);
+                for (int col=0; col<columnObject.size(); col++) {
+                    text[row][col+1] = rowFn.apply(columnObject.get(col));
+                    widths[col+1] = Math.max(widths[col+1], text[row][col+1].length());
+                }
+            }
+            Column[] columns = new Column[headerText.size()];
+            String[] seps = new String[headerText.size()];
+            for (int i=0; i<headerText.size(); i++) {
+                widths[i] = Math.max(widths[i], headerText.get(i).length());
+                columns[i] = new Column(widths[i]+2, 2, Column.Overflow.WRAP);
+                seps[i] = new String(new char[widths[i]]).replace('\0', '-');
+            }
+            TextTable table = TextTable.forColumns(help.colorScheme(), columns);
+            table.addRowValues(headerText.toArray(new String[0]));
+            table.addRowValues(seps);
+            for (int row=0; row<rowLabels.size(); row++) {
+                table.addRowValues(text[row]);
+            }
+            return table.toString();
         }
     }
 }
