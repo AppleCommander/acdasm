@@ -7,7 +7,7 @@ This project is primarily created to supply a reusable Java disassembler for the
 
 ## API
 
-The disassembler can be used in any Java application. Please review the [API](docs/API.md) section for details.
+The disassembler can be used in any Java application via the [API](https://applecommander.github.io/dev-notes/disassembler/). 
 
 ## CLI
 
