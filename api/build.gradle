@@ -55,12 +55,15 @@ tasks.register('sourcesJar', Jar) {
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            groupId = "org.applecommander"
+            artifactId = "acdasm"
+            version = "${acdasmVersion}"
+
             from components.java
+
             artifact sourcesJar
             artifact javadocJar
             pom {
-                groupId = "org.applecommander"
-                artifactId = "acdasm"
                 name = 'AppleCommander Disassembler (acdasm)'
                 description = 'A reusable Java-based API for disassembling Apple-related source code.'
                 url = 'https://applecommander.github.io/'
@@ -85,8 +88,8 @@ publishing {
             }
             repositories {
                 maven {
-                    def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-                    def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+                    def releasesRepoUrl = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2"
+                    def snapshotsRepoUrl = "https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots/"
                     url = isSnapshotVersion ? snapshotsRepoUrl : releasesRepoUrl
                     credentials {
                         username = findProperty('ossrhUsername')
