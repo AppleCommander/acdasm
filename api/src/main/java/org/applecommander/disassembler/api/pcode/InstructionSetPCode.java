@@ -198,8 +198,6 @@ public class InstructionSetPCode implements InstructionSet {
         @Override
         public String opcodeExample(int opcode) {
             Opcode op = OPCODES[opcode];
-            if (op == null) return "-";
-
             return op.impliedValue
                      .map(integer -> String.format("%s %d", op.mnemonic, integer))
                      .orElseGet(() -> op.mnemonic);
@@ -359,6 +357,7 @@ public class InstructionSetPCode implements InstructionSet {
         opcode(207, "CGP", UB);
         opcode(208, "LPA", LPA);
         opcode(209, "STE", UB, B);
+        opcode(210, "---");             // Not An Opcode
         opcode(211, "EFJ", SB);
         opcode(212, "NFJ", SB);
         opcode(213, "BPT", B);

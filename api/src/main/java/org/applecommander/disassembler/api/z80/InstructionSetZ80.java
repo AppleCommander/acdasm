@@ -152,9 +152,6 @@ public class InstructionSetZ80 implements InstructionSet {
         @Override
             public String opcodeExample(int op) {
                 Opcode opcode = opcodes[op];
-                if (opcode == null) {
-                    return "-";
-                }
                 String fmt = String.join(",", opcode.fmts)
                         .replace("rp", "rr")         // register pair
                         .replace("data", "VALUE")   // both 8-bit and 16-bit values
@@ -231,7 +228,8 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b11110011, "DI")
                 .add(0b11111001, "LD", "SP,HL")
                 .add(0b11111011, "EI")
-                .add(0b11111101, "IY", "", OVERRIDE);
+                .add(0b11111101, "IY", "", OVERRIDE)
+                .fill();
         with(ED_OPCODES)
                 .add(0b01000000, "IN", "ddd,(C)", DDD)
                 .add(0b01000001, "OUT", "(C),ddd", DDD)
@@ -254,7 +252,8 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b10100000, "LDI,LDD,LDIR,LDDR", "", RD)
                 .add(0b10100001, "CPI,CPD,CPIR,CPDR", "", RD)
                 .add(0b10100010, "INI,IND,INIR,INDR", "", RD)
-                .add(0b10100011, "OUTI,OUTD,OTIR,OTDR", "", RD);
+                .add(0b10100011, "OUTI,OUTD,OTIR,OTDR", "", RD)
+                .fill();
         with(CB_OPCODES)
                 .add(0b00000000, "RLC", "sss", SSS)
                 .add(0b00001000, "RRC", "sss", SSS)
@@ -266,7 +265,8 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b00111000, "SRL", "sss", SSS)
                 .add(0b01000000, "BIT", "bit,sss", BIT, SSS)
                 .add(0b10000000, "RES", "bit,sss", BIT, SSS)
-                .add(0b11000000, "SET", "bit,sss", BIT,SSS);
+                .add(0b11000000, "SET", "bit,sss", BIT,SSS)
+                .fill();
     }
     private static Builder with(Opcode[] o) {
         return new Builder(o);
@@ -401,6 +401,14 @@ public class InstructionSetZ80 implements InstructionSet {
                 opcodes[baseOpcode] = new Opcode(baseOpcode, mnemonic, template, flags);
             }
             return this;
+        }
+        /** Fill in any left-over empty spots in the table. */
+        public void fill() {
+            for (int i=0; i<opcodes.length; i++) {
+                if (opcodes[i] == null) {
+                    opcodes[i] = new Opcode(i, "---", "");
+                }
+            }
         }
     }
     enum Flag {
