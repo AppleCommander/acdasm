@@ -32,6 +32,14 @@ application {
     mainClass = 'org.applecommander.disassembler.cli.Main'
 }
 
+// Disable all Spring AOT processing
+processAot.configure {
+    enabled = false;
+}
+processTestAot.configure {
+    enabled = false;
+}
+
 bootJar {
     archiveBaseName = 'acdasm'
     archiveVersion = acdasmVersion
