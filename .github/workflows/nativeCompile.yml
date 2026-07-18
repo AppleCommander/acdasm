@@ -51,7 +51,7 @@ jobs:
           GRADLE_OPTS: -Djava.io.tmpdir=${{ runner.temp }} 
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: acdasm-${{ matrix.os }}-${{ matrix.arch }}
           path: cli/build/native/nativeCompile/acdasm*
