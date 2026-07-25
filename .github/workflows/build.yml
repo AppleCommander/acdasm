@@ -1,4 +1,4 @@
-name: Build AppleCommander
+name: Build AppleCommander disassembler
 
 on:
   push:
