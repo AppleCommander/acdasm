@@ -75,14 +75,12 @@ jobs:
             arch: arm64
     steps:
       - uses: actions/checkout@v7
-
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '25'
           distribution: 'liberica'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
-
       # Note that Graal v21 builds to the current architecture, and "--target" is not functional.
       # Therefore, we try to find runners that fit our targets (see above).
       - name: Build 'acdasm'
@@ -90,7 +88,12 @@ jobs:
         env:
           # Needed for Windows; not an issue for other OSes
           GRADLE_OPTS: -Djava.io.tmpdir=${{ runner.temp }} 
-
+      - name: Run UPX
+        uses: crazy-max/ghaction-upx@v4
+        if: runner.os == 'Windows' || runner.os == 'Linux'
+        with:
+          files: |
+            cli/build/native/nativeCompile/acdasm*
       - name: Upload binary
         uses: actions/upload-artifact@v7
         with:
