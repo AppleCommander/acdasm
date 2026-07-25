@@ -1,4 +1,4 @@
-name: GraalVM Native Image builds
+name: Build AppleCommander
 
 on:
   push:
