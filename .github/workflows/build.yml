@@ -27,6 +27,7 @@ jobs:
       with:
         name: build-artifacts
         path: cli/build/libs/acdasm-*.jar
+        archive: false
         if-no-files-found: error
 
   # This is a crude license header check. The ones I tested were susceptible to whitespace differences
@@ -99,3 +100,4 @@ jobs:
         with:
           name: acdasm-${{ matrix.os }}-${{ matrix.arch }}
           path: cli/build/native/nativeCompile/acdasm*
+          archive: false
