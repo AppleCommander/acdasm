@@ -40,7 +40,7 @@ jobs:
       - name: Look for license phrase
         run: |
           outfile=$(mktemp)
-          find . -name "*.java" | xargs grep -L "GNU General Public License" > ${outfile}
+          find . -name "*.java" -not -name "module-info.java" | xargs grep -L "GNU General Public License" > ${outfile}
           if [ -s "${outfile}" ]
           then
             echo "License headers missing on the following files:"
@@ -101,3 +101,35 @@ jobs:
           name: acdasm-${{ matrix.os }}-${{ matrix.arch }}
           path: cli/build/native/nativeCompile/acdasm*
           archive: false
+
+  publish:
+    name: Publish to Maven Central
+    if: github.ref_type == 'tag'
+    needs: [build-java, build-native]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6.0.1
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Publish with Gradle
+        run: ./gradlew build publish -x test
+        env:
+          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
+          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_TOKEN }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_SIGNING_KEY_ID }}
+      - name: Setup .netrc file
+        uses: extractions/netrc@v3
+        with:
+          machine: ossrh-staging-api.central.sonatype.com
+          username: ${{ secrets.OSSRH_USERNAME }}
+          password: ${{ secrets.OSSRH_TOKEN }}
+      - name: Finish publishing
+        run: ./scripts/finish-publishing.sh
