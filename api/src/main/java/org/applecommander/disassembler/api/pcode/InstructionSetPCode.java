@@ -16,20 +16,17 @@
  */
 package org.applecommander.disassembler.api.pcode;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import org.applecommander.disassembler.api.Disassembler;
 import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
-import org.ini4j.Ini;
-import org.ini4j.Profile;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.applecommander.disassembler.api.pcode.InstructionSetPCode.Flag.*;
 
@@ -38,13 +35,13 @@ public class InstructionSetPCode implements InstructionSet {
         return new InstructionSetPCode();
     }
 
-    private static final Profile.Section DESCRIPTIONS;
+    private static Map<String,String> DESCRIPTIONS = new HashMap<>();
     static {
-        try (InputStream is = Disassembler.class.getResourceAsStream("/instructions.ini")) {
-            Ini ini = new Ini();
-            ini.load(is);
-            DESCRIPTIONS = ini.get("pcode");
-            assert DESCRIPTIONS != null;
+        TomlMapper mapper = new TomlMapper();
+        try (InputStream is = Disassembler.class.getResourceAsStream("/instructions.toml")) {
+            TypeReference<Map<String, String>> typeRef = new TypeReference<>() {};
+            DESCRIPTIONS.putAll(mapper.readValue(is, typeRef));
+            assert !DESCRIPTIONS.isEmpty();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

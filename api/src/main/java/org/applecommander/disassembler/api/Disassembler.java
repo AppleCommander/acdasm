@@ -16,20 +16,14 @@
  */
 package org.applecommander.disassembler.api;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.dataformat.toml.TomlMapper;
+import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import org.ini4j.Ini;
-import org.ini4j.Profile.Section;
-
-import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
+import java.util.*;
 
 /**
  * Disassembler is the primary interface to disassemble a program.
@@ -49,17 +43,20 @@ import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
  * </pre>
  */
 public class Disassembler {
-    private static final Ini ini = new Ini();
+    private static final Map<String,Map<String,Integer>> ADDRESSES = new HashMap<>();
     static {
-        try (InputStream is = Disassembler.class.getResourceAsStream("/addresses.ini")) {
-            ini.load(is);
+        TomlMapper mapper = new TomlMapper();
+        try (InputStream is = Disassembler.class.getResourceAsStream("/addresses.toml")) {
+            TypeReference<Map<String,Map<String,Integer>>> typeRef = new TypeReference<>() {};
+            ADDRESSES.putAll(mapper.readValue(is, typeRef));
+            assert !ADDRESSES.isEmpty();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
-    /** Returns the label groups defined in the {@code addresses.ini} file. */
+    /** Returns the label groups defined in the {@code addresses.yaml} file. */
     public static Set<String> labelGroups() {
-        return ini.keySet();
+        return ADDRESSES.keySet();
     }
 
     private int startAddress;
@@ -116,14 +113,13 @@ public class Disassembler {
             assert disassembler.instructionSet != null;
             // merge in all selected sections
             for (String name : sections) {
-                Section section = ini.get(name);
+                Map<String,Integer> section = ADDRESSES.get(name);
                 if (section == null) {
                     throw new RuntimeException(String.format("Section '%s' not defined.", name));
                 }
-                for (Map.Entry<String,String> entry : section.entrySet()) {
-                    Optional<Integer> address = convert(entry.getValue());
-                    address.ifPresent(integer -> labels.putIfAbsent(integer, entry.getKey()));
-                }
+                section.forEach((label, address) -> {
+                    labels.putIfAbsent(address, label);
+                });
             }
             
             return disassembler.decode(labels);
@@ -154,19 +150,6 @@ public class Disassembler {
                 this.sections.addAll(names);
             }
             return this;
-        }
-    }
-
-    /** Add support for "$801" and "0x801" instead of just decimal like 2049. */
-    public static Optional<Integer> convert(String value) {
-        if (value == null) {
-            return Optional.empty();
-        } else if (value.startsWith("$")) {
-            return Optional.of(Integer.valueOf(value.substring(1), 16));
-        } else if (value.startsWith("0x") || value.startsWith("0X")) {
-            return Optional.of(Integer.valueOf(value.substring(2), 16));
-        } else {
-            return Optional.of(Integer.valueOf(value));
         }
     }
 }
