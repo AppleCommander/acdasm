@@ -27,6 +27,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
       - name: Sign with Gradle
         run: |
+          echo "GPG_SIGNING_KEY_BASE64 -"
+          echo $GPG_SIGNING_KEY_BASE64 | wc
+          export ORG_GRADLE_PROJECT_signingKey=$(echo "$GPG_SIGNING_KEY_BASE64" | base64 -d)
           echo "signingPassword -"
           echo "$ORG_GRADLE_PROJECT_signingPassword" | wc
           echo "signingKey -"
@@ -36,6 +39,6 @@ jobs:
           ./gradlew :api:signMavenJavaPublication -x test
         env:
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
-          ORG_GRADLE_PROJECT_signingKey: |
-            ${{ secrets.GPG_SIGNING_KEY }}
+          GPG_SIGNING_KEY_BASE64: |
+            ${{ secrets.GPG_SIGNING_KEY_BASE64 }}
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_SIGNING_KEY_ID }}
