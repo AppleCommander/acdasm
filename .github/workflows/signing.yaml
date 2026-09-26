@@ -29,8 +29,7 @@ jobs:
         run: |
           echo "GPG_SIGNING_KEY_BASE64 -"
           echo $GPG_SIGNING_KEY_BASE64 | wc
-          echo "$GPG_SIGNING_KEY_BASE64" | base64 -d > .key
-          export ORG_GRADLE_PROJECT_signingKey=$(cat .key)
+          export ORG_GRADLE_PROJECT_signingKey=$(echo "$GPG_SIGNING_KEY_BASE64" | base64 -d)
           echo "signingPassword -"
           echo "$ORG_GRADLE_PROJECT_signingPassword" | wc
           echo "signingKey -"
