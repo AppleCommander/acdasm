@@ -21,7 +21,10 @@ import org.applecommander.disassembler.api.pcode.InstructionSetPCode;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 import org.applecommander.disassembler.api.z80.InstructionSetZ80;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 

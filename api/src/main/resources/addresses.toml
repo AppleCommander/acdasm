@@ -128,7 +128,7 @@ ATN=0xf09e
 MLI=0xbf00
 
 [DOS]
-; Some of these are pulled from Beneath Apple DOS, others are just made up to cover all the pieces.
+# Some of these are pulled from Beneath Apple DOS, others are just made up to cover all the pieces.
 DOSWRM=0x3d0
 DOSCOLD=0x3d3
 DOSFM=0x3d6
@@ -159,7 +159,7 @@ Q8H=0xc08f
 
 [Softswitches]
 KBD=0xc000
-;CLR80STORE=0xc000
+#CLR80STORE=0xc000
 SET80STORE=0xc001
 CLRRAMRD=0xc002
 SETRAMRD=0xc003

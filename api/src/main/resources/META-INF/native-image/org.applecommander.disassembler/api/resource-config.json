@@ -2,19 +2,10 @@
   "resources": {
     "includes": [
       {
-        "pattern": ".*\\.ini"
+        "pattern": ".*\\.toml"
       },
       {
         "pattern": "META-INF/MANIFEST.MF"
-      },
-      {
-        "pattern": "\\QMETA-INF/services/org.ini4j.spi.EscapeTool\\E"
-      },
-      {
-        "pattern": "\\QMETA-INF/services/org.ini4j.spi.IniBuilder\\E"
-      },
-      {
-        "pattern": "\\QMETA-INF/services/org.ini4j.spi.IniParser\\E"
       }
     ]
   }

@@ -1,5 +1,6 @@
 module org.applecommander.disassembler {
-    requires ini4j;
+    requires com.fasterxml.jackson.dataformat.toml;
+    requires com.fasterxml.jackson.core;
 
     exports org.applecommander.disassembler.api;
     exports org.applecommander.disassembler.api.mos6502;

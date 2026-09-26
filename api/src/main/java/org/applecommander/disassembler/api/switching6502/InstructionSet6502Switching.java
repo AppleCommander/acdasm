@@ -16,17 +16,17 @@
  */
 package org.applecommander.disassembler.api.switching6502;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.function.Function;
-
 import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.function.Function;
 
 public class InstructionSet6502Switching implements InstructionSet {
     public static InstructionSet withSwitching() {
