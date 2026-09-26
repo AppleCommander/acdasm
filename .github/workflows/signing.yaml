@@ -29,7 +29,8 @@ jobs:
         run: |
           echo "GPG_SIGNING_KEY_BASE64 -"
           echo $GPG_SIGNING_KEY_BASE64 | wc
-          export ORG_GRADLE_PROJECT_signingKey=$(echo "$GPG_SIGNING_KEY_BASE64" | base64 -d)
+          echo "$GPG_SIGNING_KEY_BASE64" | base64 -d > .key
+          export ORG_GRADLE_PROJECT_signingKey=$(cat .key)
           echo "signingPassword -"
           echo "$ORG_GRADLE_PROJECT_signingPassword" | wc
           echo "signingKey -"
@@ -39,6 +40,5 @@ jobs:
           ./gradlew :api:signMavenJavaPublication -x test
         env:
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_SIGNING_PASSPHRASE }}
-          GPG_SIGNING_KEY_BASE64: |
-            ${{ secrets.GPG_SIGNING_KEY_BASE64 }}
+          GPG_SIGNING_KEY_BASE64: ${{ secrets.GPG_SIGNING_KEY_BASE64 }}
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_SIGNING_KEY_ID }}
