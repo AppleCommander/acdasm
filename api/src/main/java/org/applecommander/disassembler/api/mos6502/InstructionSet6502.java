@@ -17,16 +17,15 @@
 package org.applecommander.disassembler.api.mos6502;
 
 import org.applecommander.disassembler.api.Instruction;
+import org.applecommander.disassembler.api.Instruction.Operand;
+import org.applecommander.disassembler.api.Instruction.Target;
+import org.applecommander.disassembler.api.Instruction.Type;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
 import java.util.*;
 
 public class InstructionSet6502 implements InstructionSet {
-    public static final Set<Opcode6502> BRANCH = Set.of(Opcode6502.BNE, Opcode6502.BCC, Opcode6502.BCS,
-            Opcode6502.BEQ, Opcode6502.BMI, Opcode6502.BPL, Opcode6502.BRA, Opcode6502.BVC, Opcode6502.BVS,
-            Opcode6502.JMP, Opcode6502.JSR);
-
     public static InstructionSet6502 for6502() {
         return new InstructionSet6502("6502", AddressMode6502.MOS6502, Opcode6502.MOS6502);
     }
@@ -85,32 +84,26 @@ public class InstructionSet6502 implements InstructionSet {
                 completedAddresses.add(program.currentAddress());
                 Instruction inst = decodeOne(program);
                 dataFlags.clear(offset, offset+inst.code().length);
-                Opcode6502 opcode = Opcode6502.valueOf(inst.mnemonic());
-                if (BRANCH.contains(opcode)) {
-                    Instruction.Operand operand = inst.addressRef().orElseThrow();
-                    if (operand.opFmt().contains("(")) {
-                        // Skipping indirect jumps
-                        continue;
-                    }
-                    int opAddr = operand.address().orElseThrow();
-                    codeAddresses.add(opAddr);
-                    if (opAddr >= program.baseAddress() && opAddr <= program.lastAddress() && !labelAddresses.contains(opAddr)) {
-                        labelAddresses.add(opAddr);
-                    }
-                    if (opcode == Opcode6502.JMP) {
-                        break;
-                    }
-                }
-                else if (opcode == Opcode6502.RTS || opcode == Opcode6502.RTI) {
-                    break;
-                }
-                else {
-                    inst.addressRef().ifPresent(operand -> {
-                        int opAddr = operand.address().orElseThrow();
-                        if (opAddr >= program.baseAddress() && opAddr <= program.lastAddress() && !labelAddresses.contains(opAddr)) {
+                Optional<Operand> addressRef = inst.addressRef();
+                // Handle (simple) code branches; nothing indirect
+                if (addressRef.isPresent()) {
+                    Operand operand = addressRef.get();
+                    if (operand.target().isPresent()) {
+                        Target target = operand.target().get();
+                        int opAddr = target.address();
+                        if (program.inRange(opAddr) && !labelAddresses.contains(opAddr)) {
                             labelAddresses.add(opAddr);
                         }
-                    });
+                        if (target.type() == Type.CODE) {
+                            codeAddresses.add(opAddr);
+                        }
+                    }
+                }
+                // If code does NOT continue, stop processing.
+                // TODO on Instruction yet
+                final Set<String> controlTransfer = Set.of("JMP", "BRA", "RTS", "RTI");
+                if (controlTransfer.contains(inst.mnemonic())) {
+                    break;
                 }
             }
         }
@@ -186,6 +179,13 @@ public class InstructionSet6502 implements InstructionSet {
             default -> 0;
         };
 
+        // Partial determination of target type for ABS and REL branches.
+        // Other types of branching like "JMP ($1234,X)" are DATA since $1234 is not the actual address.
+        Type type = switch (opcode) {
+            case BCC, BCS, BEQ, BMI, BNE, BPL, BRA, BVC, BVS, JSR, JMP -> Type.CODE;
+            default -> Type.DATA;
+        };
+
         Instruction.Builder builder = Instruction.at(currentAddress)
                 .code(program.read(addressMode.getInstructionLength()))
                 .mnemonic(opcode.getMnemonic());
@@ -194,18 +194,18 @@ public class InstructionSet6502 implements InstructionSet {
         switch (addressMode) {
             case ACC, IMP, ZZZ1 -> {
             }
-            case ABS, REL, ZZZ3 -> builder.opAddress("%s", "$%04X", value);
-            case ABSX -> builder.opAddress("%s", "$%04X", value).opValue("X");
-            case ABSY -> builder.opAddress("%s", "$%04X", value).opValue("Y");
+            case ABS, REL, ZZZ3 -> builder.opAddress("%s", "$%04X", value, type);
+            case ABSX -> builder.opAddress("%s", "$%04X", value, Type.DATA).opValue("X");
+            case ABSY -> builder.opAddress("%s", "$%04X", value, Type.DATA).opValue("Y");
             case IMM -> builder.opValue("#$%02X", value);
-            case INDABS -> builder.opAddress("(%s)", "$%04X", value);
-            case INDABSX -> builder.opAddress("(%s", "$%04X", value).opValue("X)");
-            case INDZP -> builder.opAddress("(%s)", "$%02X", value);
-            case INDZPX -> builder.opAddress("(%s", "$%02X", value).opValue("X)");
-            case INDZPY -> builder.opAddress("(%s)", "$%02X", value).opValue("Y");
-            case ZP, ZZZ2 -> builder.opAddress("%s", "$%02X", value);
-            case ZPX -> builder.opAddress("%s", "$%02X", value).opValue("X");
-            case ZPY -> builder.opAddress("%s", "$%02X", value).opValue("Y");
+            case INDABS -> builder.opAddress("(%s)", "$%04X", value, Type.DATA);
+            case INDABSX -> builder.opAddress("(%s", "$%04X", value, Type.DATA).opValue("X)");
+            case INDZP -> builder.opAddress("(%s)", "$%02X", value, Type.DATA);
+            case INDZPX -> builder.opAddress("(%s", "$%02X", value, Type.DATA).opValue("X)");
+            case INDZPY -> builder.opAddress("(%s)", "$%02X", value, Type.DATA).opValue("Y");
+            case ZP, ZZZ2 -> builder.opAddress("%s", "$%02X", value, Type.DATA);
+            case ZPX -> builder.opAddress("%s", "$%02X", value, Type.DATA).opValue("X");
+            case ZPY -> builder.opAddress("%s", "$%02X", value, Type.DATA).opValue("Y");
         }
         return builder.get();
     }

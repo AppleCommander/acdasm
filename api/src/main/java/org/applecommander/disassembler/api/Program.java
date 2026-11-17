@@ -84,13 +84,19 @@ public class Program {
     public int currentAddress() {
         return (baseAddress+offset) % ADDRESS_SPACE; //wrap around to 0 if address exceeds the address space
     }
+    /** Set the current address. */
     public void currentAddress(int address) {
         this.offset = address - baseAddress;
         if (this.offset < 0) {
             offset = 0;
         }
     }
+    /** Get the last address in the program. */
     public int lastAddress() {
         return baseAddress + code.length - 1;
+    }
+    /** Test if this address is in the range of this program. */
+    public boolean inRange(int address) {
+        return address >= baseAddress() && address <= lastAddress();
     }
 }

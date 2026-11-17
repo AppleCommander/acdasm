@@ -17,6 +17,7 @@
 package org.applecommander.disassembler.api.sweet16;
 
 import org.applecommander.disassembler.api.Instruction;
+import org.applecommander.disassembler.api.Instruction.Type;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
@@ -93,7 +94,7 @@ public class InstructionSetSWEET16 implements InstructionSet {
             case CON -> builder.opValue("R%d", low).opValue("#$%04X", value);
             case DIR -> builder.opValue("R%d", low);
             case IND -> builder.opValue("@R%d", low);
-            case BRA -> builder.opAddress("%s", "$%04X", value);
+            case BRA -> builder.opAddress("%s", "$%04X", value, Type.CODE);
             case IMP -> {
             }
         }

@@ -17,6 +17,7 @@
 package org.applecommander.disassembler.api.z80;
 
 import org.applecommander.disassembler.api.Instruction;
+import org.applecommander.disassembler.api.Instruction.Type;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
@@ -97,6 +98,11 @@ public class InstructionSetZ80 implements InstructionSet {
                 operandValue = addr + program.peekUnsignedByte(length) + 2;
                 length += 1;
             }
+            // Identify address target type.
+            Type type = Type.DATA;
+            if (op.flags.contains(JUMP)) {
+                type = Type.CODE;
+            }
             // Operands - add into builder
             for (String operandFmt : op.fmts) {
                 // Handle IX / IY
@@ -120,13 +126,13 @@ public class InstructionSetZ80 implements InstructionSet {
                 if (operandFmt.contains("data") && op.flags.contains(DATLO)) {
                     builder.opValue(operandFmt.replace("data", "%04XH"), operandValue);
                 } else if (operandFmt.contains("add")) {
-                    builder.opAddress(operandFmt.replace("add", "%s"), "%04XH", operandValue);
+                    builder.opAddress(operandFmt.replace("add", "%s"), "%04XH", operandValue, type);
                 } else if (operandFmt.contains("port")) {
                     builder.opValue(operandFmt.replace("port", "%02XH"), operandValue);
                 } else if (operandFmt.contains("data") && op.flags.contains(DATA)) {
                     builder.opValue(operandFmt.replace("data", "%02XH"), operandValue);
                 } else if (operandFmt.contains("offset")) {
-                    builder.opAddress(operandFmt.replace("offset", "%s"), "%04XH", operandValue);
+                    builder.opAddress(operandFmt.replace("offset", "%s"), "%04XH", operandValue, type);
                 } else if (!operandFmt.isEmpty()) {
                     builder.opValue(operandFmt);
                 }
@@ -190,11 +196,11 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b00001011, "DEC", "rp", RP2SP)
                 .add(0b00001000, "EX", "AF,AF'")
                 .add(0b00001111, "RRCA")
-                .add(0b00010000, "DJNZ", "offset", OFFSET)
+                .add(0b00010000, "DJNZ", "offset", OFFSET, JUMP)
                 .add(0b00010111, "RLA")
-                .add(0b00011000, "JR", "offset", OFFSET)
+                .add(0b00011000, "JR", "offset", OFFSET, JUMP)
                 .add(0b00011111, "RRA")
-                .add(0b00100000, "JR", "cc,offset", CC2, OFFSET)
+                .add(0b00100000, "JR", "cc,offset", CC2, OFFSET, JUMP)
                 .add(0b00100010, "LD", "(add),HL", ADDLO, ADDHI)
                 .add(0b00100111, "DAA")
                 .add(0b00101010, "LD", "HL,(add)", ADDLO, ADDHI)
@@ -208,15 +214,15 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b10000000, "ADD,ADC,SUB,SBC,AND,XOR,OR,CP", "A,sss", SSS, ALU)
                 .add(0b11000000, "RET", "cc", CC3)
                 .add(0b11000001, "POP", "rp", RP2AF)
-                .add(0b11000010, "JP", "cc,add", CC3, ADDLO, ADDHI)
-                .add(0b11000011, "JP", "add", ADDLO, ADDHI)
-                .add(0b11000100, "CALL", "cc,add", CC3, ADDLO, ADDHI)
+                .add(0b11000010, "JP", "cc,add", CC3, ADDLO, ADDHI, JUMP)
+                .add(0b11000011, "JP", "add", ADDLO, ADDHI, JUMP)
+                .add(0b11000100, "CALL", "cc,add", CC3, ADDLO, ADDHI, JUMP)
                 .add(0b11000101, "PUSH", "rp", RP2AF)
                 .add(0b11000110, "ADD,ADC,SUB,SBC,AND,XOR,OR,CP", "A,data", ALU, DATA)
                 .add(0b11000111, "RST", "n", N3)
                 .add(0b11001001, "RET")
                 .add(0b11001011, "CB", "", PREFIX)
-                .add(0b11001101, "CALL", "add", ADDLO, ADDHI)
+                .add(0b11001101, "CALL", "add", ADDLO, ADDHI, JUMP)
                 .add(0b11010011, "OUT", "(port),A", PORT)
                 .add(0b11011001, "EXX")
                 .add(0b11011011, "IN", "A,(port)", PORT)
@@ -425,6 +431,8 @@ public class InstructionSetZ80 implements InstructionSet {
         PREFIX,
         OVERRIDE,
         RD,
-        BIT
+        BIT,
+        // Used to indicate jump to an address (not indirect and not stack related).
+        JUMP
     }
 }

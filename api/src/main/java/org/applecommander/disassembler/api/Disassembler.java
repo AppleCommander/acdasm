@@ -65,7 +65,7 @@ public class Disassembler {
     private byte[] code;
     private InstructionSet instructionSet;
     private boolean prescanCode = false;
-    private List<Integer> entryPoints = new ArrayList<>();
+    private final List<Integer> entryPoints = new ArrayList<>();
 
     /** Initiate the disassembly. */
     public static Builder with(byte[] code) {
@@ -90,8 +90,9 @@ public class Disassembler {
 
         // Gather all the instructions and identify all target addresses
         assembly.forEach(instruction -> {
-            instruction.addressRef().flatMap(Instruction.Operand::address).ifPresent(address -> {
-                if ((address >= startAddress) && (address < startAddress + code.length)) {
+            instruction.addressRef().flatMap(Instruction.Operand::target).ifPresent(target -> {
+                int address = target.address();
+                if (program.inRange(address)) {
                     labels.computeIfAbsent(address, addr -> String.format("L%04X", addr));
                 }
             });

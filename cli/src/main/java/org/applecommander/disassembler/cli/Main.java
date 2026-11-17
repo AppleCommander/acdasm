@@ -298,8 +298,8 @@ public class Main implements Callable<Integer> {
         System.out.printf(" %-10.10s ", labels.getOrDefault(instruction.address(), ""));
         System.out.printf("%-5s ", instruction.mnemonic());
         System.out.printf("%-30s ", instruction.operands().stream().map(operand -> {
-                if (operand.address().isPresent() && labels.containsKey(operand.address().get())) {
-                    return operand.format(labels.get(operand.address().get()));
+                if (operand.target().isPresent() && labels.containsKey(operand.target().get())) {
+                    return operand.format(labels.get(operand.target().get()));
                 }
                 else {
                     return operand.format();
