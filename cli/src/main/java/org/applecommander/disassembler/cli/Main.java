@@ -91,6 +91,13 @@ public class Main implements Callable<Integer> {
 
     @Option(names = { "--descriptions" }, negatable = true, description = "Include opcode descriptions.")
     private Boolean descriptions;
+
+    @Option(names = "--prescan", description = "Enable prescan of code to try and identify code versus data.")
+    private boolean prescanFlag;
+
+    @Option(names = "--entry", converter = IntegerTypeConverter.class, split = ",",
+            description = "Code entry point. If this is specified, beginning of file is NOT automatically entered.")
+    private int[] entryPoints;
     
     @Parameters(arity = "1", description = "File to disassemble.")
     private Path file;
@@ -184,13 +191,21 @@ public class Main implements Callable<Integer> {
     }
 
     public void disassemble(byte[] code) {
-        List<Instruction> assembly = Disassembler.with(code)
+        Disassembler.Builder builder = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
                 .bytesToDecode(length)
                 .use(cpuSelection.get())
                 .section(libraries)
-                .decode(labels);
+                .prescan(prescanFlag);
+
+        if (entryPoints != null) {
+            for (int entryPoint : entryPoints) {
+                builder.entryPoint(entryPoint);
+            }
+        }
+
+        List<Instruction> assembly = builder.decode(labels);
 
         assembly.forEach(emitter);
     }
@@ -267,6 +282,9 @@ public class Main implements Callable<Integer> {
 
     public void emitWithLabels(Instruction instruction) {
         int bytesPerLine = cpuSelection.instructionSet.defaults().bytesPerInstruction();
+        if (prescanFlag) {
+            bytesPerLine = 8;
+        }
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
@@ -308,6 +326,9 @@ public class Main implements Callable<Integer> {
     }
     public void emitRaw(Instruction instruction) {
         int bytesPerLine = cpuSelection.instructionSet.defaults().bytesPerInstruction();
+        if (prescanFlag) {
+            bytesPerLine = 8;
+        }
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();

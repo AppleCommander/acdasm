@@ -64,6 +64,8 @@ public class Disassembler {
     private int bytesToDecode;
     private byte[] code;
     private InstructionSet instructionSet;
+    private boolean prescanCode = false;
+    private List<Integer> entryPoints = new ArrayList<>();
 
     /** Initiate the disassembly. */
     public static Builder with(byte[] code) {
@@ -80,6 +82,10 @@ public class Disassembler {
         }
 
         Program program = new Program(code,startAddress);
+        if (prescanCode) {
+            instructionSet.prescan(program, entryPoints);
+            program.currentAddress(program.baseAddress());
+        }
         List<Instruction> assembly = instructionSet.decode(program);
 
         // Gather all the instructions and identify all target addresses
@@ -142,6 +148,15 @@ public class Disassembler {
         /** Select the instruction set. Required. */
         public Builder use(InstructionSet instructionSet) {
             disassembler.instructionSet = instructionSet;
+            return this;
+        }
+        /** Enable the prescan capability in an effort to identify data versus code. */
+        public Builder prescan(boolean prescanFlag) {
+            disassembler.prescanCode = prescanFlag;
+            return this;
+        }
+        public Builder entryPoint(int address) {
+            disassembler.entryPoints.add(address);
             return this;
         }
         /** Add any label groups requested. Allows "All" and "None". */

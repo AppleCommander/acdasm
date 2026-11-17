@@ -20,10 +20,13 @@ import org.applecommander.disassembler.api.Instruction;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class InstructionSet6502 implements InstructionSet {
+    public static final Set<Opcode6502> BRANCH = Set.of(Opcode6502.BNE, Opcode6502.BCC, Opcode6502.BCS,
+            Opcode6502.BEQ, Opcode6502.BMI, Opcode6502.BPL, Opcode6502.BRA, Opcode6502.BVC, Opcode6502.BVS,
+            Opcode6502.JMP, Opcode6502.JSR);
+
     public static InstructionSet6502 for6502() {
         return new InstructionSet6502("6502", AddressMode6502.MOS6502, Opcode6502.MOS6502);
     }
@@ -37,7 +40,9 @@ public class InstructionSet6502 implements InstructionSet {
     private final AddressMode6502[] addressModes;
     private final Opcode6502[] opcodes;
     private final String name;
-    
+    private BitSet dataFlags;
+    private final List<Integer> labelAddresses = new ArrayList<>();
+
     private InstructionSet6502(String name, AddressMode6502[] addressModes, Opcode6502[] opcodes) {
         this.name = name;
         this.addressModes = addressModes;
@@ -54,10 +59,106 @@ public class InstructionSet6502 implements InstructionSet {
     }
 
     @Override
+    public void prescan(Program program, List<Integer> entryPoints) {
+        // Assume it's all data.
+        dataFlags = new BitSet(program.length());
+        dataFlags.set(0, program.length());
+
+        Set<Integer> completedAddresses = new HashSet<>();
+        List<Integer> codeAddresses = new ArrayList<>();
+        if (entryPoints.isEmpty()) {
+            codeAddresses.add(program.baseAddress());
+        } else {
+            codeAddresses.addAll(entryPoints);
+        }
+        while (!codeAddresses.isEmpty()) {
+            // Only review an address once.
+            int address = codeAddresses.removeFirst();
+            if (completedAddresses.contains(address)) {
+                continue;
+            }
+            completedAddresses.add(address);
+            program.currentAddress(address);
+            // Run until we see an (obvious) exit of RTS or RTI.
+            while (program.hasMore()) {
+                int offset = program.currentOffset();
+                completedAddresses.add(program.currentAddress());
+                Instruction inst = decodeOne(program);
+                dataFlags.clear(offset, offset+inst.code().length);
+                Opcode6502 opcode = Opcode6502.valueOf(inst.mnemonic());
+                if (BRANCH.contains(opcode)) {
+                    Instruction.Operand operand = inst.addressRef().orElseThrow();
+                    if (operand.opFmt().contains("(")) {
+                        // Skipping indirect jumps
+                        continue;
+                    }
+                    int opAddr = operand.address().orElseThrow();
+                    codeAddresses.add(opAddr);
+                    if (opAddr >= program.baseAddress() && opAddr <= program.lastAddress() && !labelAddresses.contains(opAddr)) {
+                        labelAddresses.add(opAddr);
+                    }
+                    if (opcode == Opcode6502.JMP) {
+                        break;
+                    }
+                }
+                else if (opcode == Opcode6502.RTS || opcode == Opcode6502.RTI) {
+                    break;
+                }
+                else {
+                    inst.addressRef().ifPresent(operand -> {
+                        int opAddr = operand.address().orElseThrow();
+                        if (opAddr >= program.baseAddress() && opAddr <= program.lastAddress() && !labelAddresses.contains(opAddr)) {
+                            labelAddresses.add(opAddr);
+                        }
+                    });
+                }
+            }
+        }
+        labelAddresses.sort(Integer::compare);
+    }
+
+    @Override
     public List<Instruction> decode(Program program) {
         List<Instruction> assembly = new ArrayList<>();
         while (program.hasMore()) {
-            assembly.add(decodeOne(program));
+            int currentAddress = program.currentAddress();
+            if (dataFlags != null && dataFlags.get(program.currentOffset())) {
+                int nextLabel = labelAddresses.stream().filter(n -> n > currentAddress)
+                        .findFirst().orElse(program.lastAddress()+1);
+                int bytes = nextLabel - currentAddress;
+                byte[] data = program.read(bytes);
+                for (int i=0; i<data.length; i++) {
+                    StringBuilder sb = new StringBuilder();
+                    final int highBit = Byte.toUnsignedInt(data[i]) & 0x80;
+                    for (int j=i; j<data.length; j++) {
+                        int ch = Byte.toUnsignedInt(data[j]) & 0x7f;
+                        if (ch < 0x20 || ch == 0x7f) break;
+                        sb.append((char)ch);
+                        // Keep high bit setting the same - but we include one assuming it's the end
+                        if ((Byte.toUnsignedInt(data[j]) & 0x80) != highBit) break;
+                    }
+                    if (sb.length() > 1) {
+                        assembly.add(Instruction.at(currentAddress + i)
+                                .code(Arrays.copyOfRange(data, i, i+sb.length()))
+                                .mnemonic(".string")
+                                .opValue("'%s'", sb.toString())
+                                .get());
+                        i += sb.length()-1;
+                    }
+                    else {
+                        int length = Math.min(16, data.length-i);
+                        assembly.add(Instruction.at(currentAddress+i)
+                                .code(Arrays.copyOfRange(data, i, i+length))
+                                .mnemonic(".hex")
+                                .opValue(HexFormat.of().formatHex(data, i, i+length))
+                                .get());
+                        i += length-1;
+                    }
+                }
+            }
+            else {
+                assembly.add(decodeOne(program));
+            }
         }
         return assembly;
     }

@@ -84,4 +84,13 @@ public class Program {
     public int currentAddress() {
         return (baseAddress+offset) % ADDRESS_SPACE; //wrap around to 0 if address exceeds the address space
     }
+    public void currentAddress(int address) {
+        this.offset = address - baseAddress;
+        if (this.offset < 0) {
+            offset = 0;
+        }
+    }
+    public int lastAddress() {
+        return baseAddress + code.length - 1;
+    }
 }
