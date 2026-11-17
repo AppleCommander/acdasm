@@ -198,7 +198,7 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b00001111, "RRCA")
                 .add(0b00010000, "DJNZ", "offset", OFFSET, JUMP)
                 .add(0b00010111, "RLA")
-                .add(0b00011000, "JR", "offset", OFFSET, JUMP)
+                .add(0b00011000, "JR", "offset", OFFSET, JUMP, TERMINAL)
                 .add(0b00011111, "RRA")
                 .add(0b00100000, "JR", "cc,offset", CC2, OFFSET, JUMP)
                 .add(0b00100010, "LD", "(add),HL", ADDLO, ADDHI)
@@ -215,12 +215,12 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b11000000, "RET", "cc", CC3)
                 .add(0b11000001, "POP", "rp", RP2AF)
                 .add(0b11000010, "JP", "cc,add", CC3, ADDLO, ADDHI, JUMP)
-                .add(0b11000011, "JP", "add", ADDLO, ADDHI, JUMP)
+                .add(0b11000011, "JP", "add", ADDLO, ADDHI, JUMP, TERMINAL)
                 .add(0b11000100, "CALL", "cc,add", CC3, ADDLO, ADDHI, JUMP)
                 .add(0b11000101, "PUSH", "rp", RP2AF)
                 .add(0b11000110, "ADD,ADC,SUB,SBC,AND,XOR,OR,CP", "A,data", ALU, DATA)
                 .add(0b11000111, "RST", "n", N3)
-                .add(0b11001001, "RET")
+                .add(0b11001001, "RET", TERMINAL)
                 .add(0b11001011, "CB", "", PREFIX)
                 .add(0b11001101, "CALL", "add", ADDLO, ADDHI, JUMP)
                 .add(0b11010011, "OUT", "(port),A", PORT)
@@ -228,7 +228,7 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b11011011, "IN", "A,(port)", PORT)
                 .add(0b11011101, "IX", "", OVERRIDE)
                 .add(0b11100011, "EX", "(SP),HL")
-                .add(0b11101001, "JP", "(HL)")
+                .add(0b11101001, "JP", "(HL)", TERMINAL)
                 .add(0b11101011, "EX", "DE,HL")
                 .add(0b11101101, "ED", "", PREFIX)
                 .add(0b11110011, "DI")
@@ -242,14 +242,14 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b01000010, "SBC", "HL,rp", RP2SP)
                 .add(0b01000011, "LD", "(add),rp", ADDLO, ADDHI, RP2SP)
                 .add(0b01000100, "NEG")
-                .add(0b01000101, "RETN")
+                .add(0b01000101, "RETN", TERMINAL)
                 .add(0b01000110, "IM", "0")
                 .add(0b01010110, "IM", "1")
                 .add(0b01011110, "IM", "2")
                 .add(0b01000111, "LD", "I,A")
                 .add(0b01001010, "ADC", "HL,rp", RP2SP)
                 .add(0b01001011, "LD", "rp,(add)", ADDLO, ADDHI, RP2SP)
-                .add(0b01001101, "RETI")
+                .add(0b01001101, "RETI", TERMINAL)
                 .add(0b01001111, "LD", "R,A")
                 .add(0b01010111, "LD", "A,I")
                 .add(0b01011111, "LD", "A,R")
@@ -283,8 +283,8 @@ public class InstructionSetZ80 implements InstructionSet {
             assert(opcodes.length == 256);
             this.opcodes = opcodes;
         }
-        Builder add(int baseOpcode, String mnemonic) {
-            return add(baseOpcode, mnemonic, "");
+        Builder add(int baseOpcode, String mnemonic, Flag... flags) {
+            return add(baseOpcode, mnemonic, "", flags);
         }
         Builder add(int baseOpcode, String mnemonic, String template, Flag... flags) {
             final Set<Flag> f = Set.of(flags);
@@ -433,6 +433,8 @@ public class InstructionSetZ80 implements InstructionSet {
         RD,
         BIT,
         // Used to indicate jump to an address (not indirect and not stack related).
-        JUMP
+        JUMP,
+        // Used to indicate execution terminates at this point (return or jump always).
+        TERMINAL
     }
 }

@@ -136,6 +136,9 @@ public class InstructionSetPCode implements InstructionSet {
                     }
                     case CSP -> {
                         int csp = procedure.readUB();
+                        if (csp == 4) { // EXIT from procedure.
+                            builder.terminal();
+                        }
                         if (CSP_MAP.containsKey(csp)) {
                             builder.mnemonic(CSP_MAP.get(csp));
                         } else {
@@ -170,6 +173,9 @@ public class InstructionSetPCode implements InstructionSet {
                         for (int i = w1; i <= w2; i++) {
                             builder.opAddress("%s", "$%04X", procedure.readSelfRelativeW(), Type.CODE);
                         }
+                    }
+                    case TERMINAL -> {
+                        builder.terminal();
                     }
                     case JUMP -> { /* This is a marker flag for building the disassembler target address type. */ }
                     default -> throw new RuntimeException("Unexpected flag type: " + flag);
@@ -313,7 +319,7 @@ public class InstructionSetPCode implements InstructionSet {
         opcode(158, "CSP", CSP);
         opcode(159, "LDCN");
         opcode(160, "ADJ", UB);
-        opcode(161, "FJP", SB, JUMP);
+        opcode(161, "FJP", SB, JUMP, TERMINAL);
         opcode(162, "INC", B);
         opcode(163, "IND", B);
         opcode(164, "IXA", B);
@@ -324,8 +330,8 @@ public class InstructionSetPCode implements InstructionSet {
         opcode(169, "LDO", B);
         opcode(170, "SAS", UB);
         opcode(171, "SRO", B);
-        opcode(172, "XJP", XJP, JUMP);
-        opcode(173, "RNP", DB);
+        opcode(172, "XJP", XJP, JUMP, TERMINAL);
+        opcode(173, "RNP", DB, TERMINAL);
         opcode(174, "CIP", UB);
         opcode(175, "EQU", TYPE);
         opcode(176, "GEQ", TYPE);
@@ -345,7 +351,7 @@ public class InstructionSetPCode implements InstructionSet {
         opcode(190, "LDB");
         opcode(191, "STB");
         opcode(192, "IXP", UB, UB);     // UB1 and UB2
-        opcode(193, "RBP", DB);
+        opcode(193, "RBP", DB, TERMINAL);
         opcode(194, "CBP", UB);
         opcode(195, "EQUI");
         opcode(196, "GEQI");
@@ -436,6 +442,11 @@ public class InstructionSetPCode implements InstructionSet {
          * Information flag that identifies opcodes that directly transfer control
          * to an address. Used in disassembler; not Pascal oriented.
          */
-        JUMP
+        JUMP,
+        /**
+         * Information flag that identifies opcodes that terminate a routine.
+         * That is, always jumps or returns from a subroutine.
+         */
+        TERMINAL
     }
 }

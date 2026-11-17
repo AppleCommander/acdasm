@@ -100,9 +100,7 @@ public class InstructionSet6502 implements InstructionSet {
                     }
                 }
                 // If code does NOT continue, stop processing.
-                // TODO on Instruction yet
-                final Set<String> controlTransfer = Set.of("JMP", "BRA", "RTS", "RTI");
-                if (controlTransfer.contains(inst.mnemonic())) {
+                if (inst.terminal()) {
                     break;
                 }
             }
@@ -189,6 +187,11 @@ public class InstructionSet6502 implements InstructionSet {
         Instruction.Builder builder = Instruction.at(currentAddress)
                 .code(program.read(addressMode.getInstructionLength()))
                 .mnemonic(opcode.getMnemonic());
+        // Flag terminal instructions.
+        switch (opcode) {
+            case BRA, JMP, RTS, RTI -> builder.terminal();
+            default -> {}
+        }
         // Notes: ZZZ{1,2,3} are length of the invalid opcode. Picked most simple representation; not meant to be
         //        technically correct.
         switch (addressMode) {

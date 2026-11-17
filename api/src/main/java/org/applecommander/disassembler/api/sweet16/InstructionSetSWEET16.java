@@ -90,6 +90,10 @@ public class InstructionSetSWEET16 implements InstructionSet {
         Instruction.Builder builder = Instruction.at(currentAddress)
                 .code(program.read(addressMode.getInstructionLength()))
                 .mnemonic(opcode.getMnemonic());
+        switch (opcode) {
+            case RTN, BR, RS -> builder.terminal();
+            default -> {}
+        }
         switch (addressMode) {
             case CON -> builder.opValue("R%d", low).opValue("#$%04X", value);
             case DIR -> builder.opValue("R%d", low);

@@ -30,9 +30,10 @@ import java.util.Optional;
  * @param mnemonic The opcode mnemonic.
  * @param operands List of operands, assumed to be joined with ",".
  * @param description An optional description given to the opcode.
+ * @param terminal This instruction terminates the routine. That is, code execution does not go past this instruction.
  */
 public record Instruction(int address, byte[] code, String mnemonic, List<Operand> operands,
-                          Optional<String> description) {
+                          Optional<String> description, boolean terminal) {
 
     public Optional<Operand> addressRef() {
         for (Operand operand : operands) {
@@ -49,7 +50,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
      * @param opFmt Operand format string. This should be with "%s" and include any formatting.
      *              Example: Immediate addressing would be "#%s".
      * @param value The formatted value. It will be combined with the operand format string, unless a label is requested.
-     * @param address An optional address. The disassembler uses this to identify labels.
+     * @param target An optional address. The disassembler uses this to identify labels.
      */
     public record Operand(String opFmt, String value, Optional<Target> target) {
         /** Format the operand with the given value. */
@@ -73,7 +74,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
 
     /**
      * The type of target. Code applies to actual target, not indirect addresses (so <tt>JMP ($0300)</tt>
-     * has an target that is considered _data_.)
+     * has a target that is considered _data_.)
      */
     public enum Type {
         CODE,
@@ -104,6 +105,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         private String mnemonic = "";
         private final List<Operand> operands = new ArrayList<>();
         private String description;
+        private boolean terminal = false;
 
         private Builder(int address) {
             this.address = address;
@@ -114,6 +116,10 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         public Builder code(byte[] code) {
             assert code != null;
             this.code = code;
+            return this;
+        }
+        public Builder terminal() {
+            this.terminal = true;
             return this;
         }
         public Builder mnemonic(String mnemonic) {
@@ -138,7 +144,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             return this;
         }
         public Instruction get() {
-            return new Instruction(address, code, mnemonic, operands, Optional.ofNullable(description));
+            return new Instruction(address, code, mnemonic, operands, Optional.ofNullable(description), terminal);
         }
     }
 
