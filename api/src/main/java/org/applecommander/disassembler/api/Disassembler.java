@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Disassembler is the primary interface to disassemble a program.
@@ -62,20 +63,22 @@ public class Disassembler {
     private final int bytesToSkip;
     private final int bytesToDecode;
     private final InstructionSet instructionSet;
-    private final boolean prescanCode;
     private final List<Integer> entryPoints;
+    private final BitSet dataFlags;
+    private final List<Integer> labelAddresses;
     private int startAddress;
     private byte[] code;
 
     Disassembler(int startAddress, int bytesToSkip, int bytesToDecode, byte[] code,
-                 InstructionSet instructionSet, boolean prescanCode, List<Integer> entryPoints) {
+                 InstructionSet instructionSet, List<Integer> entryPoints) {
         this.startAddress = startAddress;
         this.bytesToSkip = bytesToSkip;
         this.bytesToDecode = bytesToDecode;
         this.code = code;
         this.instructionSet = instructionSet;
-        this.prescanCode = prescanCode;
         this.entryPoints = Collections.unmodifiableList(entryPoints);
+        this.dataFlags = new BitSet(code.length);
+        this.labelAddresses = new ArrayList<>();
     }
 
     /** Initiate the disassembly. */
@@ -92,12 +95,22 @@ public class Disassembler {
             startAddress+= bytesToSkip;
         }
 
+        // Assume all is code
+        dataFlags.clear(0, code.length);
         Program program = new Program(code,startAddress);
-        if (prescanCode) {
-            instructionSet.prescan(program, entryPoints);
+        if (!entryPoints.isEmpty()) {
+            // If we have entry points, we need to scan the program and identify data versus code.
+            prescan(program);
             program.currentAddress(program.baseAddress());
         }
-        List<Instruction> assembly = instructionSet.decode(program);
+        List<Instruction> assembly = new ArrayList<>();
+        while (program.hasMore()) {
+            if (dataFlags.get(program.currentOffset())) {
+                assembly.add(parseData(program));
+            } else {
+                assembly.add(instructionSet.decodeOne(program));
+            }
+        }
 
         // Gather all the instructions and identify all target addresses
         assembly.forEach(instruction -> {
@@ -111,6 +124,96 @@ public class Disassembler {
 
         return assembly;
     }
+
+    public Instruction parseData(Program program) {
+        int currentAddress = program.currentAddress();
+        int nextLabel = labelAddresses.stream().filter(n -> n > currentAddress)
+                .findFirst().orElse(program.lastAddress()+1);
+        int bytes = nextLabel - currentAddress;
+        int n = 0;
+        int ch = Byte.toUnsignedInt(program.peek(n)) & 0x7f;
+        if (ch >= 0x20 && ch < 0x7f) {
+            // Assume we have a string. Scan ahead to see how far we get.
+            final int highBit = Byte.toUnsignedInt(program.peek(n)) & 0x80;
+            StringBuilder sb = new StringBuilder();
+            while (ch >= 0x20 && ch < 0x7f && n < bytes) {
+                sb.append((char)ch);
+                n++;
+                if (n == bytes) break;
+                ch = Byte.toUnsignedInt(program.peek(n)) & 0x7f;
+                // Keep high bit setting the same - but we include one assuming it's the end
+                if ((Byte.toUnsignedInt(program.peek(n)) & 0x80) != highBit) break;
+            }
+            return Instruction.at(currentAddress)
+                    .code(program.read(n))
+                    .mnemonic(".string")
+                    .opValue("'%s'", sb.toString())
+                    .get();
+        } else {
+            while (ch < 0x20 || ch == 0x7f && n < bytes) {
+                n++;
+                if (n == bytes) break;
+                ch = Byte.toUnsignedInt(program.peek(n)) & 0x7f;
+            }
+            byte[] data = program.read(n);
+            return Instruction.at(currentAddress)
+                    .code(data)
+                    .mnemonic(".hex")
+                    .opValue(HexFormat.of().formatHex(data))
+                    .get();
+        }
+    }
+
+    public void prescan(Program program) {
+        // Assume all is data and we'll figure out the code.
+        dataFlags.set(0, code.length);
+        labelAddresses.clear();
+
+        Set<Integer> completedAddresses = new HashSet<>();
+        List<Integer> codeAddresses = new ArrayList<>();
+        if (entryPoints.isEmpty()) {
+            codeAddresses.add(program.baseAddress());
+        } else {
+            codeAddresses.addAll(entryPoints);
+        }
+        while (!codeAddresses.isEmpty()) {
+            // Only review an address once.
+            int address = codeAddresses.removeFirst();
+            if (completedAddresses.contains(address)) {
+                continue;
+            }
+            completedAddresses.add(address);
+            program.currentAddress(address);
+            // Run until we see a terminal instruction.
+            while (program.hasMore()) {
+                int offset = program.currentOffset();
+                completedAddresses.add(program.currentAddress());
+                Instruction inst = instructionSet.decodeOne(program);
+                dataFlags.clear(offset, offset+inst.code().length);
+                Optional<Instruction.Operand> addressRef = inst.addressRef();
+                // Handle (simple) code branches; nothing indirect
+                if (addressRef.isPresent()) {
+                    Instruction.Operand operand = addressRef.get();
+                    if (operand.target().isPresent()) {
+                        Instruction.Target target = operand.target().get();
+                        int opAddr = target.address();
+                        if (program.inRange(opAddr) && !labelAddresses.contains(opAddr)) {
+                            labelAddresses.add(opAddr);
+                        }
+                        if (target.type() == Instruction.Type.CODE) {
+                            codeAddresses.add(opAddr);
+                        }
+                    }
+                }
+                // If code does NOT continue, stop processing.
+                if (inst.terminal()) {
+                    break;
+                }
+            }
+        }
+        labelAddresses.sort(Integer::compare);
+        System.out.println(labelAddresses.stream().map(n -> String.format("$%04X", n)).collect(Collectors.joining(",")));
+    }
     
     public static class Builder {
         private final Set<String> sections = new HashSet<>();
@@ -119,7 +222,6 @@ public class Disassembler {
         private int bytesToSkip;
         private int bytesToDecode;
         private InstructionSet instructionSet;
-        private boolean prescanCode;
         private List<Integer> entryPoints = new ArrayList<>();
 
         public Builder(byte[] code) {
@@ -147,7 +249,7 @@ public class Disassembler {
             }
 
             Disassembler disassembler = new Disassembler(startAddress, bytesToSkip, bytesToDecode, code,
-                    instructionSet, prescanCode, entryPoints);
+                    instructionSet, entryPoints);
             return disassembler.decode(labels);
         }
         /** The starting address for the disassembly. */
@@ -168,11 +270,6 @@ public class Disassembler {
         /** Select the instruction set. Required. */
         public Builder use(InstructionSet instructionSet) {
             this.instructionSet = instructionSet;
-            return this;
-        }
-        /** Enable the prescan capability in an effort to identify data versus code. */
-        public Builder prescan(boolean prescanFlag) {
-            this.prescanCode = prescanFlag;
             return this;
         }
         public Builder entryPoint(int address) {

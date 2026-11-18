@@ -21,7 +21,6 @@ import org.applecommander.disassembler.api.Instruction.Type;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class InstructionSetSWEET16 implements InstructionSet {
@@ -42,18 +41,10 @@ public class InstructionSetSWEET16 implements InstructionSet {
                 .get();
     }
 
-    @Override
-    public List<Instruction> decode(Program program) {
-        List<Instruction> assembly = new ArrayList<>();
-        while (program.hasMore()) {
-            assembly.add(decodeOne(program));
-        }
-        return assembly;
-    }
-
     /**
      * Single instruction decoding has been extracted to support the 6502/SWEET16 switching mode.
      */
+    @Override
     public Instruction decodeOne(Program program) {
         int op = program.peekUnsignedByte();
         int low = op & 0x0f;

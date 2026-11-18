@@ -16,8 +16,7 @@
  */
 package org.applecommander.disassembler.api;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Program is a state class that tracks where decoding is, what the address is, and provides
@@ -30,12 +29,30 @@ public class Program {
     private final int baseAddress;
     private final byte[] code;
     private int offset;
+    private final List<Object> objects = new ArrayList<>();
 
     public Program(byte[] code, int address) {
         Objects.requireNonNull(code);
         this.baseAddress = address;
         this.code = code;
         this.offset = 0;
+    }
+
+    /** Allows the instruction sets to store a persistent data item for future retrieval. */
+    public <T> void put(T object) {
+        if (get(object.getClass()).isPresent()) {
+            throw new UnsupportedOperationException("can only store one data item per type");
+        }
+        objects.add(object);
+    }
+    /** Retrieve the specified data item. */
+    public <T> Optional<T> get(Class<T> iface) {
+        for (Object object : objects) {
+            if (iface.isInstance(object)) {
+                return Optional.of(iface.cast(object));
+            }
+        }
+        return Optional.empty();
     }
 
     /** Length of code. */
@@ -67,6 +84,10 @@ public class Program {
         byte[] x = Arrays.copyOfRange(code, offset, offset+n);
         offset += n;
         return x;
+    }
+    /** Peek ahead at a byte. */
+    public byte peek(int n) {
+        return code[offset+n];
     }
     /** Get an unsigned byte from specified offset. This is not relative like the others. */
     public int getUnsignedByte(int n) {

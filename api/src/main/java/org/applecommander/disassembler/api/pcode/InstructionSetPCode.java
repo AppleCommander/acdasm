@@ -27,7 +27,10 @@ import org.applecommander.disassembler.api.Program;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.applecommander.disassembler.api.pcode.InstructionSetPCode.Flag.*;
 
@@ -96,103 +99,102 @@ public class InstructionSetPCode implements InstructionSet {
     }
 
     @Override
-    public List<Instruction> decode(Program program) {
-        List<Instruction> assembly = new ArrayList<>();
-        Procedure procedure = new Procedure(program);
-        while (procedure.hasMore()) {
-            if (procedure.currentOffset() >= procedure.jumpTable()) {
-                assembly.add(Instruction.at(procedure.currentAddress())
-                        .mnemonic("J/T")
-                        .opAddress("%s", "$%04X", procedure.readSelfRelativeW(), Type.CODE)
-                        .code(procedure.bytesRead())
-                        .get());
-                continue;
-            }
+    public Instruction decodeOne(Program program) {
+        if (program.get(Procedure.class).isEmpty()) {
+            Procedure procedure = new Procedure(program);
+            program.put(procedure);
+        }
+        Procedure procedure = program.get(Procedure.class).orElseThrow();
+        if (procedure.currentOffset() >= procedure.jumpTable()) {
+            return Instruction.at(procedure.currentAddress())
+                    .mnemonic("J/T")
+                    .opAddress("%s", "$%04X", procedure.readSelfRelativeW(), Type.CODE)
+                    .code(procedure.bytesRead())
+                    .get();
+        }
 
-            Opcode opcode = OPCODES[procedure.readUB()];
+        Opcode opcode = OPCODES[procedure.readUB()];
 
-            Instruction.Builder builder = Instruction.at(procedure.currentAddress());
-            builder.mnemonic(opcode.mnemonic);
-            // Note that we usually have only one, but sometimes we have DB,B or UB,B or UB,UB
-            // ... so this makes us read it in the right order
-            for (Flag flag : opcode.flags) {
-                switch (flag) {
-                    case UB, DB -> builder.opValue("%d", procedure.readUB());
-                    case SB -> {
-                        Type type = Type.DATA;
-                        if (opcode.flags.contains(JUMP)) {
-                            type = Type.CODE;
-                        }
-                        builder.opAddress("%s", "$%04X", procedure.readSBOffset(), type);
+        Instruction.Builder builder = Instruction.at(procedure.currentAddress());
+        builder.mnemonic(opcode.mnemonic);
+        // Note that we usually have only one, but sometimes we have DB,B or UB,B or UB,UB
+        // ... so this makes us read it in the right order
+        for (Flag flag : opcode.flags) {
+            switch (flag) {
+                case UB, DB -> builder.opValue("%d", procedure.readUB());
+                case SB -> {
+                    Type type = Type.DATA;
+                    if (opcode.flags.contains(JUMP)) {
+                        type = Type.CODE;
                     }
-                    case B -> builder.opValue("%d", procedure.readB());
-                    case W -> builder.opValue("%d", procedure.readW());
-                    case TYPE -> {
-                        int t = procedure.readUB();
-                        builder.mnemonic(String.format("%s%s", opcode.mnemonic, TYPE_NAMES[t]));
-                        if (t == 10 || t == 12) {
-                            builder.opValue("%d", procedure.readB());
-                        }
+                    builder.opAddress("%s", "$%04X", procedure.readSBOffset(), type);
+                }
+                case B -> builder.opValue("%d", procedure.readB());
+                case W -> builder.opValue("%d", procedure.readW());
+                case TYPE -> {
+                    int t = procedure.readUB();
+                    builder.mnemonic(String.format("%s%s", opcode.mnemonic, TYPE_NAMES[t]));
+                    if (t == 10 || t == 12) {
+                        builder.opValue("%d", procedure.readB());
                     }
-                    case CSP -> {
-                        int csp = procedure.readUB();
-                        if (csp == 4) { // EXIT from procedure.
-                            builder.terminal();
-                        }
-                        if (CSP_MAP.containsKey(csp)) {
-                            builder.mnemonic(CSP_MAP.get(csp));
-                        } else {
-                            builder.opValue("%d", csp);
-                        }
-                    }
-                    case LDC -> {
-                        int ub = procedure.readUB();    // UB is implied by size of list
-                        procedure.alignToWord();
-                        for (int i = 0; i < ub; i++) {
-                            builder.opValue("%d", procedure.readW());
-                        }
-                    }
-                    case LPA, LSA -> {
-                        // Both are documented as <chars> but other docs suggest LPA may be bytes.
-                        int ub = procedure.readUB();
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < ub; i++) {
-                            sb.append((char) procedure.readUB());
-                        }
-                        builder.opValue("'%s'", sb.toString());
-                    }
-                    case XJP -> {
-                        boolean aligned = procedure.alignToWord();
-                        int w1 = procedure.readW();
-                        int w2 = procedure.readW();
-                        builder.opValue("Range %d..%d", w1, w2);
-                        procedure.readUB();                         // UJP per documentation
-                        int w3addr = procedure.readSBOffset() + 5;  // adjusted for XJP itself
-                        if (aligned) w3addr++;
-                        builder.opValue("UJP $%04X", w3addr);
-                        for (int i = w1; i <= w2; i++) {
-                            builder.opAddress("%s", "$%04X", procedure.readSelfRelativeW(), Type.CODE);
-                        }
-                    }
-                    case TERMINAL -> {
+                }
+                case CSP -> {
+                    int csp = procedure.readUB();
+                    if (csp == 4) { // EXIT from procedure.
                         builder.terminal();
                     }
-                    case JUMP -> { /* This is a marker flag for building the disassembler target address type. */ }
-                    default -> throw new RuntimeException("Unexpected flag type: " + flag);
+                    if (CSP_MAP.containsKey(csp)) {
+                        builder.mnemonic(CSP_MAP.get(csp));
+                    } else {
+                        builder.opValue("%d", csp);
+                    }
                 }
+                case LDC -> {
+                    int ub = procedure.readUB();    // UB is implied by size of list
+                    procedure.alignToWord();
+                    for (int i = 0; i < ub; i++) {
+                        builder.opValue("%d", procedure.readW());
+                    }
+                }
+                case LPA, LSA -> {
+                    // Both are documented as <chars> but other docs suggest LPA may be bytes.
+                    int ub = procedure.readUB();
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < ub; i++) {
+                        sb.append((char) procedure.readUB());
+                    }
+                    builder.opValue("'%s'", sb.toString());
+                }
+                case XJP -> {
+                    boolean aligned = procedure.alignToWord();
+                    int w1 = procedure.readW();
+                    int w2 = procedure.readW();
+                    builder.opValue("Range %d..%d", w1, w2);
+                    procedure.readUB();                         // UJP per documentation
+                    int w3addr = procedure.readSBOffset() + 5;  // adjusted for XJP itself
+                    if (aligned) w3addr++;
+                    builder.opValue("UJP $%04X", w3addr);
+                    for (int i = w1; i <= w2; i++) {
+                        builder.opAddress("%s", "$%04X", procedure.readSelfRelativeW(), Type.CODE);
+                    }
+                }
+                case TERMINAL -> {
+                    builder.terminal();
+                }
+                case JUMP -> { /* This is a marker flag for building the disassembler target address type. */ }
+                default -> throw new RuntimeException("Unexpected flag type: " + flag);
             }
-            // Catch stuff with constants
-            opcode.impliedValue.ifPresent(n -> builder.opValue("%d", n));
-
-            // Apply description last since CSP changes the opcode mnemonic
-            if (DESCRIPTIONS.containsKey(builder.mnemonic())) {
-                builder.description(DESCRIPTIONS.get(builder.mnemonic()));
-            }
-
-            builder.code(procedure.bytesRead());
-            assembly.add(builder.get());
         }
-        return assembly;
+        // Catch stuff with constants
+        opcode.impliedValue.ifPresent(n -> builder.opValue("%d", n));
+
+        // Apply description last since CSP changes the opcode mnemonic
+        if (DESCRIPTIONS.containsKey(builder.mnemonic())) {
+            builder.description(DESCRIPTIONS.get(builder.mnemonic()));
+        }
+
+        builder.code(procedure.bytesRead());
+        return builder.get();
     }
 
     @Override

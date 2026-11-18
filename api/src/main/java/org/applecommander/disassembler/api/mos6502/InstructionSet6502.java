@@ -17,13 +17,11 @@
 package org.applecommander.disassembler.api.mos6502;
 
 import org.applecommander.disassembler.api.Instruction;
-import org.applecommander.disassembler.api.Instruction.Operand;
-import org.applecommander.disassembler.api.Instruction.Target;
 import org.applecommander.disassembler.api.Instruction.Type;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
-import java.util.*;
+import java.util.List;
 
 public class InstructionSet6502 implements InstructionSet {
     public static InstructionSet6502 for6502() {
@@ -39,8 +37,6 @@ public class InstructionSet6502 implements InstructionSet {
     private final AddressMode6502[] addressModes;
     private final Opcode6502[] opcodes;
     private final String name;
-    private BitSet dataFlags;
-    private final List<Integer> labelAddresses = new ArrayList<>();
 
     private InstructionSet6502(String name, AddressMode6502[] addressModes, Opcode6502[] opcodes) {
         this.name = name;
@@ -57,106 +53,10 @@ public class InstructionSet6502 implements InstructionSet {
                 .get();
     }
 
-    @Override
-    public void prescan(Program program, List<Integer> entryPoints) {
-        // Assume it's all data.
-        dataFlags = new BitSet(program.length());
-        dataFlags.set(0, program.length());
-
-        Set<Integer> completedAddresses = new HashSet<>();
-        List<Integer> codeAddresses = new ArrayList<>();
-        if (entryPoints.isEmpty()) {
-            codeAddresses.add(program.baseAddress());
-        } else {
-            codeAddresses.addAll(entryPoints);
-        }
-        while (!codeAddresses.isEmpty()) {
-            // Only review an address once.
-            int address = codeAddresses.removeFirst();
-            if (completedAddresses.contains(address)) {
-                continue;
-            }
-            completedAddresses.add(address);
-            program.currentAddress(address);
-            // Run until we see an (obvious) exit of RTS or RTI.
-            while (program.hasMore()) {
-                int offset = program.currentOffset();
-                completedAddresses.add(program.currentAddress());
-                Instruction inst = decodeOne(program);
-                dataFlags.clear(offset, offset+inst.code().length);
-                Optional<Operand> addressRef = inst.addressRef();
-                // Handle (simple) code branches; nothing indirect
-                if (addressRef.isPresent()) {
-                    Operand operand = addressRef.get();
-                    if (operand.target().isPresent()) {
-                        Target target = operand.target().get();
-                        int opAddr = target.address();
-                        if (program.inRange(opAddr) && !labelAddresses.contains(opAddr)) {
-                            labelAddresses.add(opAddr);
-                        }
-                        if (target.type() == Type.CODE) {
-                            codeAddresses.add(opAddr);
-                        }
-                    }
-                }
-                // If code does NOT continue, stop processing.
-                if (inst.terminal()) {
-                    break;
-                }
-            }
-        }
-        labelAddresses.sort(Integer::compare);
-    }
-
-    @Override
-    public List<Instruction> decode(Program program) {
-        List<Instruction> assembly = new ArrayList<>();
-        while (program.hasMore()) {
-            int currentAddress = program.currentAddress();
-            if (dataFlags != null && dataFlags.get(program.currentOffset())) {
-                int nextLabel = labelAddresses.stream().filter(n -> n > currentAddress)
-                        .findFirst().orElse(program.lastAddress()+1);
-                int bytes = nextLabel - currentAddress;
-                byte[] data = program.read(bytes);
-                for (int i=0; i<data.length; i++) {
-                    StringBuilder sb = new StringBuilder();
-                    final int highBit = Byte.toUnsignedInt(data[i]) & 0x80;
-                    for (int j=i; j<data.length; j++) {
-                        int ch = Byte.toUnsignedInt(data[j]) & 0x7f;
-                        if (ch < 0x20 || ch == 0x7f) break;
-                        sb.append((char)ch);
-                        // Keep high bit setting the same - but we include one assuming it's the end
-                        if ((Byte.toUnsignedInt(data[j]) & 0x80) != highBit) break;
-                    }
-                    if (sb.length() > 1) {
-                        assembly.add(Instruction.at(currentAddress + i)
-                                .code(Arrays.copyOfRange(data, i, i+sb.length()))
-                                .mnemonic(".string")
-                                .opValue("'%s'", sb.toString())
-                                .get());
-                        i += sb.length()-1;
-                    }
-                    else {
-                        int length = Math.min(16, data.length-i);
-                        assembly.add(Instruction.at(currentAddress+i)
-                                .code(Arrays.copyOfRange(data, i, i+length))
-                                .mnemonic(".hex")
-                                .opValue(HexFormat.of().formatHex(data, i, i+length))
-                                .get());
-                        i += length-1;
-                    }
-                }
-            }
-            else {
-                assembly.add(decodeOne(program));
-            }
-        }
-        return assembly;
-    }
-
     /**
      * Single instruction decoding has been extracted to support the 6502/SWEET16 switching mode.
      */
+    @Override
     public Instruction decodeOne(Program program) {
         int op = program.peekUnsignedByte();
 

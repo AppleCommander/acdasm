@@ -24,7 +24,6 @@ import org.applecommander.disassembler.api.Program;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -55,15 +54,11 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
-    public List<Instruction> decode(Program program) {
-        List<Instruction> assembly = new ArrayList<>();
-        while (program.hasMore()) {
-            if (!pending.isEmpty()) {
-                assembly.add(pending.remove());
-            }
-            assembly.add(strategy.apply(program));
+    public Instruction decodeOne(Program program) {
+        if (!pending.isEmpty()) {
+            return pending.remove();
         }
-        return assembly;
+        return strategy.apply(program);
     }
 
     @Override
