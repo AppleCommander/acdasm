@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Disassembler is the primary interface to disassemble a program.
@@ -212,7 +211,6 @@ public class Disassembler {
             }
         }
         labelAddresses.sort(Integer::compare);
-        System.out.println(labelAddresses.stream().map(n -> String.format("$%04X", n)).collect(Collectors.joining(",")));
     }
     
     public static class Builder {
