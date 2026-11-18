@@ -59,13 +59,24 @@ public class Disassembler {
         return ADDRESSES.keySet();
     }
 
+    private final int bytesToSkip;
+    private final int bytesToDecode;
+    private final InstructionSet instructionSet;
+    private final boolean prescanCode;
+    private final List<Integer> entryPoints;
     private int startAddress;
-    private int bytesToSkip;
-    private int bytesToDecode;
     private byte[] code;
-    private InstructionSet instructionSet;
-    private boolean prescanCode = false;
-    private final List<Integer> entryPoints = new ArrayList<>();
+
+    Disassembler(int startAddress, int bytesToSkip, int bytesToDecode, byte[] code,
+                 InstructionSet instructionSet, boolean prescanCode, List<Integer> entryPoints) {
+        this.startAddress = startAddress;
+        this.bytesToSkip = bytesToSkip;
+        this.bytesToDecode = bytesToDecode;
+        this.code = code;
+        this.instructionSet = instructionSet;
+        this.prescanCode = prescanCode;
+        this.entryPoints = Collections.unmodifiableList(entryPoints);
+    }
 
     /** Initiate the disassembly. */
     public static Builder with(byte[] code) {
@@ -103,12 +114,18 @@ public class Disassembler {
     
     public static class Builder {
         private final Set<String> sections = new HashSet<>();
-        private final Disassembler disassembler = new Disassembler();
-        
+        private final byte[] code;
+        private int startAddress;
+        private int bytesToSkip;
+        private int bytesToDecode;
+        private InstructionSet instructionSet;
+        private boolean prescanCode;
+        private List<Integer> entryPoints = new ArrayList<>();
+
         public Builder(byte[] code) {
-            disassembler.startAddress = 0x300;
-            disassembler.code = code;
-            disassembler.instructionSet = InstructionSet6502.for6502();
+            this.startAddress = 0x300;
+            this.code = code;
+            this.instructionSet = InstructionSet6502.for6502();
         }
         /** Decode without preserving labels. */
         public List<Instruction> decode() {
@@ -117,7 +134,7 @@ public class Disassembler {
         /** Decode and preserve labels. Will also include any label groups requested. */
         public List<Instruction> decode(Map<Integer,String> labels) {
             assert labels != null;
-            assert disassembler.instructionSet != null;
+            assert this.instructionSet != null;
             // merge in all selected sections
             for (String name : sections) {
                 Map<String,Integer> section = ADDRESSES.get(name);
@@ -128,36 +145,38 @@ public class Disassembler {
                     labels.putIfAbsent(address, label);
                 });
             }
-            
+
+            Disassembler disassembler = new Disassembler(startAddress, bytesToSkip, bytesToDecode, code,
+                    instructionSet, prescanCode, entryPoints);
             return disassembler.decode(labels);
         }
         /** The starting address for the disassembly. */
         public Builder startingAddress(int address) {
-            disassembler.startAddress = address;
+            this.startAddress = address;
             return this;
         }
         /** Any bytes to skip in the program. Defaults to 0. */
         public Builder bytesToSkip(int skip) {
-            disassembler.bytesToSkip = skip;
+            this.bytesToSkip = skip;
             return this;
         }
         /** How much of the program to disassemble. Defaults to entire program. */
         public Builder bytesToDecode(int length) {
-            disassembler.bytesToDecode = length;
+            this.bytesToDecode = length;
             return this;
         }
         /** Select the instruction set. Required. */
         public Builder use(InstructionSet instructionSet) {
-            disassembler.instructionSet = instructionSet;
+            this.instructionSet = instructionSet;
             return this;
         }
         /** Enable the prescan capability in an effort to identify data versus code. */
         public Builder prescan(boolean prescanFlag) {
-            disassembler.prescanCode = prescanFlag;
+            this.prescanCode = prescanFlag;
             return this;
         }
         public Builder entryPoint(int address) {
-            disassembler.entryPoints.add(address);
+            this.entryPoints.add(address);
             return this;
         }
         /** Add any label groups requested. Allows "All" and "None". */
