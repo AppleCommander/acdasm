@@ -87,7 +87,7 @@ public class Program {
     }
     /** Peek ahead at a byte. */
     public byte peek(int n) {
-        return code[offset+n];
+        return (offset+n < code.length) ? code[offset+n] : 0;
     }
     /** Get an unsigned byte from specified offset. This is not relative like the others. */
     public int getUnsignedByte(int n) {
@@ -107,10 +107,12 @@ public class Program {
     }
     /** Set the current address. */
     public void currentAddress(int address) {
-        this.offset = address - baseAddress;
-        if (this.offset < 0) {
-            offset = 0;
+        if (address < baseAddress) {
+            String msg = String.format("the requested address ($%04X) comes before the program start address ($%04X)",
+                    address, baseAddress);
+            throw new IllegalArgumentException(msg);
         }
+        this.offset = address - baseAddress;
     }
     /** Get the last address in the program. */
     public int lastAddress() {

@@ -68,7 +68,7 @@ public class Disassembler {
     private int startAddress;
     private byte[] code;
 
-    Disassembler(int startAddress, int bytesToSkip, int bytesToDecode, byte[] code,
+    public Disassembler(int startAddress, int bytesToSkip, int bytesToDecode, byte[] code,
                  InstructionSet instructionSet, List<Integer> entryPoints) {
         this.startAddress = startAddress;
         this.bytesToSkip = bytesToSkip;
@@ -133,14 +133,14 @@ public class Disassembler {
         int ch = Byte.toUnsignedInt(program.peek(n)) & 0x7f;
         if (ch >= 0x20 && ch < 0x7f) {
             // Assume we have a string. Scan ahead to see how far we get.
-            final int highBit = Byte.toUnsignedInt(program.peek(n)) & 0x80;
+            final int expectedHighBit = Byte.toUnsignedInt(program.peek(n)) & 0x80;
             StringBuilder sb = new StringBuilder();
             while (ch >= 0x20 && ch < 0x7f && n < bytes) {
-                int priorHighBit = Byte.toUnsignedInt(program.peek(n)) & 0x80;
+                int currentHighBit = Byte.toUnsignedInt(program.peek(n)) & 0x80;
                 sb.append((char)ch);
                 n++;
                 // Exit if we get to end of range -or- if the high bit switched
-                if (n == bytes || priorHighBit != highBit) break;
+                if (n == bytes || currentHighBit != expectedHighBit) break;
                 ch = Byte.toUnsignedInt(program.peek(n)) & 0x7f;
             }
             return Instruction.at(currentAddress)
@@ -149,7 +149,7 @@ public class Disassembler {
                     .opValue("'%s'", sb.toString())
                     .get();
         } else {
-            while (ch < 0x20 || ch == 0x7f && n < bytes) {
+            while ((n < bytes && ch < 0x20) || ch == 0x7f) {
                 n++;
                 if (n == bytes) break;
                 ch = Byte.toUnsignedInt(program.peek(n)) & 0x7f;
@@ -199,7 +199,7 @@ public class Disassembler {
                         if (program.inRange(opAddr) && !labelAddresses.contains(opAddr)) {
                             labelAddresses.add(opAddr);
                         }
-                        if (target.type() == Instruction.Type.CODE) {
+                        if (target.type() == Instruction.Type.CODE && program.inRange(opAddr)) {
                             codeAddresses.add(opAddr);
                         }
                     }
@@ -270,6 +270,7 @@ public class Disassembler {
             this.instructionSet = instructionSet;
             return this;
         }
+        /** Add a code entry point to the list for processing. May be used multiple times. */
         public Builder entryPoint(int address) {
             this.entryPoints.add(address);
             return this;
