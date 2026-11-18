@@ -15,8 +15,9 @@ The disassembler can be used in any Java application via the [API](https://apple
 $ acdasm --help
 Usage: acdasm [-hV] [--debug] [--[no-]descriptions] [--[no-]labels]
               [-a=<startAddress>] [-n=<length>] [--offset=<offset>]
-              [-l=<library>[,<library>...]]... [--6502 | --sweet16 | --6502s |
-              --6502x | --65c02 | --pcode | --z80 | --codefile] <file>
+              [--code=<entryPoints>[,<entryPoints>...]]... [-l=<library>[,
+              <library>...]]... [--6502 | --sweet16 | --6502s | --6502x |
+              --65c02 | --pcode | --z80 | --codefile] <file>
 
 AppleCommander Disassembler.
 
@@ -25,6 +26,10 @@ AppleCommander Disassembler.
 Options:
   -a, --addr, --origin=<startAddress>
                              Set start address for application.
+      --code=<entryPoints>[,<entryPoints>...]
+                             Code entry point. Enables data detection. If this
+                               is specified, beginning of file is NOT
+                               automatically entered.
       --debug                Print stack traces
       --[no-]descriptions    Include opcode descriptions.
   -h, --help                 Show this help message and exit.
@@ -51,12 +56,12 @@ Processor Defaults:
   Default Value          6502   6502X  6502S  65C02  SWEET-16  Z80    P-CODE
   ---------------------  -----  -----  -----  -----  --------  -----  ------
   Start Address          $0300  $0300  $0300  $0300  $0300     0100H  $0000
-  Library Labels         All    All    All    All    All       None   None
+  Library Labels         All    All    All    All    All       CPM    None
   Max Bytes/Instruction  3      3      3      3      3         5      8
   Show Descriptions?     No     No     No     No     No        No     Yes
 
 Library Groups:
-  DISKII, DOS, F800, Applesoft, ProDOS, Softswitches
+  CPM, F800, ProDOS, DISKII, DOS, Applesoft, Softswitches
 ```
 
 Sample runs:
