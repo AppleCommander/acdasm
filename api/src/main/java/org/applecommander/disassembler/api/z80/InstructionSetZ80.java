@@ -17,10 +17,10 @@
 package org.applecommander.disassembler.api.z80;
 
 import org.applecommander.disassembler.api.Instruction;
+import org.applecommander.disassembler.api.Instruction.Type;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -39,104 +39,108 @@ public class InstructionSetZ80 implements InstructionSet {
         return Defaults.builder()
                 .startAddress(0x100)        // This it the start address for COM files
                 .bytesPerInstruction(5)
+                .libraryLabels("CPM")
                 .get();
     }
 
     @Override
-    public List<Instruction> decode(Program program) {
-        List<Instruction> assembly = new ArrayList<>();
-        while (program.hasMore()) {
-            int addr = program.currentAddress();
-            Instruction.Builder builder = Instruction.at(addr);
+    public Instruction decodeOne(Program program) {
+        int addr = program.currentAddress();
+        Instruction.Builder builder = Instruction.at(addr);
 
-            int length = 1;
-            int b = program.peekUnsignedByte();
-            Opcode op = ROOT_OPCODES[b];
-            boolean ix = false;
-            boolean iy = false;
-            boolean hasDisplacement = false;
-            // Overrides first
-            if (op.flags.contains(OVERRIDE)) {
-                ix = op.opcode == 0xdd;
-                iy = op.opcode == 0xfd;
-                b = program.peekUnsignedByte(length);
-                op = ROOT_OPCODES[b];
-                length++;
-            }
-            // Setup for IX+override and IY+override (manual, uncertain of nice way)
-            if ((ix | iy) && (b == 0x36 || b == 0xcb)) {
-                // (DD|FD) (36|CB) <displacement> <opcode>
-                hasDisplacement = true;
-                length++;
-            }
-            // Alternate prefixes next
-            if (op.flags.contains(PREFIX)) {
-                b = program.peekUnsignedByte(length);
-                if (op.opcode() == 0xed) {
-                    op = ED_OPCODES[b];
-                } else if (op.opcode() == 0xcb) {
-                    op = CB_OPCODES[b];
-                }
-                length++;
-            }
-            builder.mnemonic(op.mnemonic);
-            // Operands - figure out extra bytes
-            int operandValue = 0;
-            if ((op.flags.contains(DATLO) && op.flags.contains(DATHI))
-                    || (op.flags.contains(ADDLO) && op.flags.contains(ADDHI))) {
-                int b1 = program.peekUnsignedByte(length);
-                int b2 = program.peekUnsignedByte(length + 1);
-                operandValue = b1 | b2 << 8;
-                length += 2;
-            }
-            if (op.flags.contains(DATA) || op.flags.contains(PORT)) {
-                operandValue = program.peekUnsignedByte(length);
-                length += 1;
-            }
-            if (op.flags.contains(OFFSET)) {
-                operandValue = addr + program.peekUnsignedByte(length) + 2;
-                length += 1;
-            }
-            // Operands - add into builder
-            for (String operandFmt : op.fmts) {
-                // Handle IX / IY
-                if (ix || iy) {
-                    String reg = ix ? "IX" : "IY";
-                    if (operandFmt.contains("(HL)") && hasDisplacement) {
-                        int displacement = program.peekUnsignedByte(2);
-                        operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
-                    } else if (operandFmt.contains("(HL)") && b == 0xe9) {
-                        // JP (IX) and JP (IY) are special
-                        operandFmt = operandFmt.replace("(HL)", String.format("(%s)", reg));
-                    } else if (operandFmt.contains("(HL)")) {
-                        int displacement = program.peekUnsignedByte(length);
-                        operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
-                        length++;
-                    } else if (operandFmt.contains("HL")) {
-                        operandFmt = operandFmt.replace("HL", reg);
-                    }
-                }
-                // Set up the operand
-                if (operandFmt.contains("data") && op.flags.contains(DATLO)) {
-                    builder.opValue(operandFmt.replace("data", "%04XH"), operandValue);
-                } else if (operandFmt.contains("add")) {
-                    builder.opAddress(operandFmt.replace("add", "%s"), "%04XH", operandValue);
-                } else if (operandFmt.contains("port")) {
-                    builder.opValue(operandFmt.replace("port", "%02XH"), operandValue);
-                } else if (operandFmt.contains("data") && op.flags.contains(DATA)) {
-                    builder.opValue(operandFmt.replace("data", "%02XH"), operandValue);
-                } else if (operandFmt.contains("offset")) {
-                    builder.opAddress(operandFmt.replace("offset", "%s"), "%04XH", operandValue);
-                } else if (!operandFmt.isEmpty()) {
-                    builder.opValue(operandFmt);
-                }
-            }
-            //
-            //return new InstructionZ80(addr, op.mnemonic, operandFmt, operandValue, program.read(length));
-            builder.code(program.read(length));
-            assembly.add(builder.get());
+        int length = 1;
+        int b = program.peekUnsignedByte();
+        Opcode op = ROOT_OPCODES[b];
+        boolean ix = false;
+        boolean iy = false;
+        boolean hasDisplacement = false;
+        // Overrides first
+        if (op.flags.contains(OVERRIDE)) {
+            ix = op.opcode == 0xdd;
+            iy = op.opcode == 0xfd;
+            b = program.peekUnsignedByte(length);
+            op = ROOT_OPCODES[b];
+            length++;
         }
-        return assembly;
+        // Setup for IX+override and IY+override (manual, uncertain of nice way)
+        if ((ix | iy) && (b == 0x36 || b == 0xcb)) {
+            // (DD|FD) (36|CB) <displacement> <opcode>
+            hasDisplacement = true;
+            length++;
+        }
+        // Alternate prefixes next
+        if (op.flags.contains(PREFIX)) {
+            b = program.peekUnsignedByte(length);
+            if (op.opcode() == 0xed) {
+                op = ED_OPCODES[b];
+            } else if (op.opcode() == 0xcb) {
+                op = CB_OPCODES[b];
+            }
+            length++;
+        }
+        builder.mnemonic(op.mnemonic);
+        // Operands - figure out extra bytes
+        int operandValue = 0;
+        if ((op.flags.contains(DATLO) && op.flags.contains(DATHI))
+                || (op.flags.contains(ADDLO) && op.flags.contains(ADDHI))) {
+            int b1 = program.peekUnsignedByte(length);
+            int b2 = program.peekUnsignedByte(length + 1);
+            operandValue = b1 | b2 << 8;
+            length += 2;
+        }
+        if (op.flags.contains(DATA) || op.flags.contains(PORT)) {
+            operandValue = program.peekUnsignedByte(length);
+            length += 1;
+        }
+        if (op.flags.contains(OFFSET)) {
+            operandValue = addr + program.peekSignedByte(length) + 2;
+            length += 1;
+        }
+        // Identify address target type.
+        Type type = Type.DATA;
+        if (op.flags.contains(JUMP)) {
+            type = Type.CODE;
+        }
+        // Mark terminal instructions
+        if (op.flags.contains(TERMINAL)) {
+            builder.terminal();
+        }
+        // Operands - add into builder
+        for (String operandFmt : op.fmts) {
+            // Handle IX / IY
+            if (ix || iy) {
+                String reg = ix ? "IX" : "IY";
+                if (operandFmt.contains("(HL)") && hasDisplacement) {
+                    int displacement = program.peekUnsignedByte(2);
+                    operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
+                } else if (operandFmt.contains("(HL)") && b == 0xe9) {
+                    // JP (IX) and JP (IY) are special
+                    operandFmt = operandFmt.replace("(HL)", String.format("(%s)", reg));
+                } else if (operandFmt.contains("(HL)")) {
+                    int displacement = program.peekUnsignedByte(length);
+                    operandFmt = operandFmt.replace("(HL)", String.format("(%s+%02XH)", reg, displacement));
+                    length++;
+                } else if (operandFmt.contains("HL")) {
+                    operandFmt = operandFmt.replace("HL", reg);
+                }
+            }
+            // Set up the operand
+            if (operandFmt.contains("data") && op.flags.contains(DATLO)) {
+                builder.opAddress(operandFmt.replace("data", "%s"), "%04XH", operandValue, type);
+            } else if (operandFmt.contains("add")) {
+                builder.opAddress(operandFmt.replace("add", "%s"), "%04XH", operandValue, type);
+            } else if (operandFmt.contains("port")) {
+                builder.opValue(operandFmt.replace("port", "%02XH"), operandValue);
+            } else if (operandFmt.contains("data") && op.flags.contains(DATA)) {
+                builder.opValue(operandFmt.replace("data", "%02XH"), operandValue);
+            } else if (operandFmt.contains("offset")) {
+                builder.opAddress(operandFmt.replace("offset", "%s"), "%04XH", operandValue, type);
+            } else if (!operandFmt.isEmpty()) {
+                builder.opValue(operandFmt);
+            }
+        }
+        builder.code(program.read(length));
+        return builder.get();
     }
 
     @Override
@@ -190,11 +194,11 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b00001011, "DEC", "rp", RP2SP)
                 .add(0b00001000, "EX", "AF,AF'")
                 .add(0b00001111, "RRCA")
-                .add(0b00010000, "DJNZ", "offset", OFFSET)
+                .add(0b00010000, "DJNZ", "offset", OFFSET, JUMP)
                 .add(0b00010111, "RLA")
-                .add(0b00011000, "JR", "offset", OFFSET)
+                .add(0b00011000, "JR", "offset", OFFSET, JUMP, TERMINAL)
                 .add(0b00011111, "RRA")
-                .add(0b00100000, "JR", "cc,offset", CC2, OFFSET)
+                .add(0b00100000, "JR", "cc,offset", CC2, OFFSET, JUMP)
                 .add(0b00100010, "LD", "(add),HL", ADDLO, ADDHI)
                 .add(0b00100111, "DAA")
                 .add(0b00101010, "LD", "HL,(add)", ADDLO, ADDHI)
@@ -208,21 +212,21 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b10000000, "ADD,ADC,SUB,SBC,AND,XOR,OR,CP", "A,sss", SSS, ALU)
                 .add(0b11000000, "RET", "cc", CC3)
                 .add(0b11000001, "POP", "rp", RP2AF)
-                .add(0b11000010, "JP", "cc,add", CC3, ADDLO, ADDHI)
-                .add(0b11000011, "JP", "add", ADDLO, ADDHI)
-                .add(0b11000100, "CALL", "cc,add", CC3, ADDLO, ADDHI)
+                .add(0b11000010, "JP", "cc,add", CC3, ADDLO, ADDHI, JUMP)
+                .add(0b11000011, "JP", "add", ADDLO, ADDHI, JUMP, TERMINAL)
+                .add(0b11000100, "CALL", "cc,add", CC3, ADDLO, ADDHI, JUMP)
                 .add(0b11000101, "PUSH", "rp", RP2AF)
                 .add(0b11000110, "ADD,ADC,SUB,SBC,AND,XOR,OR,CP", "A,data", ALU, DATA)
                 .add(0b11000111, "RST", "n", N3)
-                .add(0b11001001, "RET")
+                .add(0b11001001, "RET", TERMINAL)
                 .add(0b11001011, "CB", "", PREFIX)
-                .add(0b11001101, "CALL", "add", ADDLO, ADDHI)
+                .add(0b11001101, "CALL", "add", ADDLO, ADDHI, JUMP)
                 .add(0b11010011, "OUT", "(port),A", PORT)
                 .add(0b11011001, "EXX")
                 .add(0b11011011, "IN", "A,(port)", PORT)
                 .add(0b11011101, "IX", "", OVERRIDE)
                 .add(0b11100011, "EX", "(SP),HL")
-                .add(0b11101001, "JP", "(HL)")
+                .add(0b11101001, "JP", "(HL)", TERMINAL)
                 .add(0b11101011, "EX", "DE,HL")
                 .add(0b11101101, "ED", "", PREFIX)
                 .add(0b11110011, "DI")
@@ -236,14 +240,14 @@ public class InstructionSetZ80 implements InstructionSet {
                 .add(0b01000010, "SBC", "HL,rp", RP2SP)
                 .add(0b01000011, "LD", "(add),rp", ADDLO, ADDHI, RP2SP)
                 .add(0b01000100, "NEG")
-                .add(0b01000101, "RETN")
+                .add(0b01000101, "RETN", TERMINAL)
                 .add(0b01000110, "IM", "0")
                 .add(0b01010110, "IM", "1")
                 .add(0b01011110, "IM", "2")
                 .add(0b01000111, "LD", "I,A")
                 .add(0b01001010, "ADC", "HL,rp", RP2SP)
                 .add(0b01001011, "LD", "rp,(add)", ADDLO, ADDHI, RP2SP)
-                .add(0b01001101, "RETI")
+                .add(0b01001101, "RETI", TERMINAL)
                 .add(0b01001111, "LD", "R,A")
                 .add(0b01010111, "LD", "A,I")
                 .add(0b01011111, "LD", "A,R")
@@ -277,8 +281,8 @@ public class InstructionSetZ80 implements InstructionSet {
             assert(opcodes.length == 256);
             this.opcodes = opcodes;
         }
-        Builder add(int baseOpcode, String mnemonic) {
-            return add(baseOpcode, mnemonic, "");
+        Builder add(int baseOpcode, String mnemonic, Flag... flags) {
+            return add(baseOpcode, mnemonic, "", flags);
         }
         Builder add(int baseOpcode, String mnemonic, String template, Flag... flags) {
             final Set<Flag> f = Set.of(flags);
@@ -425,6 +429,10 @@ public class InstructionSetZ80 implements InstructionSet {
         PREFIX,
         OVERRIDE,
         RD,
-        BIT
+        BIT,
+        // Used to indicate jump to an address (not indirect and not stack related).
+        JUMP,
+        // Used to indicate execution terminates at this point (return or jump always).
+        TERMINAL
     }
 }

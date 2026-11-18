@@ -18,6 +18,7 @@ package org.applecommander.disassembler.api;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -29,13 +30,14 @@ import java.util.Optional;
  * @param mnemonic The opcode mnemonic.
  * @param operands List of operands, assumed to be joined with ",".
  * @param description An optional description given to the opcode.
+ * @param terminal This instruction terminates the routine. That is, code execution does not go past this instruction.
  */
 public record Instruction(int address, byte[] code, String mnemonic, List<Operand> operands,
-                          Optional<String> description) {
+                          Optional<String> description, boolean terminal) {
 
     public Optional<Operand> addressRef() {
         for (Operand operand : operands) {
-            if (operand.address().isPresent()) {
+            if (operand.target().isPresent()) {
                 return Optional.of(operand);
             }
         }
@@ -48,9 +50,9 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
      * @param opFmt Operand format string. This should be with "%s" and include any formatting.
      *              Example: Immediate addressing would be "#%s".
      * @param value The formatted value. It will be combined with the operand format string, unless a label is requested.
-     * @param address An optional address. The disassembler uses this to identify labels.
+     * @param target An optional address. The disassembler uses this to identify labels.
      */
-    public record Operand(String opFmt, String value, Optional<Integer> address) {
+    public record Operand(String opFmt, String value, Optional<Target> target) {
         /** Format the operand with the given value. */
         public String format() {
             return String.format(opFmt, value);
@@ -59,6 +61,24 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         public String format(String label) {
             return String.format(opFmt, label);
         }
+    }
+
+    /**
+     * A target captures the target and the type of target.
+     *
+     * @param address The target this operand works on.
+     * @param type The type of target.
+     */
+    public record Target(int address, Type type) {
+    }
+
+    /**
+     * The type of target. Code applies to actual target, not indirect addresses (so <tt>JMP ($0300)</tt>
+     * has a target that is considered _data_.)
+     */
+    public enum Type {
+        CODE,
+        DATA
     }
 
     /**
@@ -85,6 +105,7 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         private String mnemonic = "";
         private final List<Operand> operands = new ArrayList<>();
         private String description;
+        private boolean terminal = false;
 
         private Builder(int address) {
             this.address = address;
@@ -97,6 +118,10 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             this.code = code;
             return this;
         }
+        public Builder terminal() {
+            this.terminal = true;
+            return this;
+        }
         public Builder mnemonic(String mnemonic) {
             assert mnemonic != null;
             this.mnemonic = mnemonic;
@@ -105,8 +130,8 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
         public String mnemonic() {
             return this.mnemonic;
         }
-        public Builder opAddress(String opFmt, String fmt, int address) {
-            operands.add(new OpBuilder(opFmt).address(fmt, address).get());
+        public Builder opAddress(String opFmt, String fmt, int address, Type type) {
+            operands.add(new OpBuilder(opFmt).address(fmt, address, type).get());
             return this;
         }
         public Builder opValue(String fmt, Object... values) {
@@ -118,23 +143,15 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             this.description = description;
             return this;
         }
-        public Optional<Operand> addressRef() {
-            for (Operand operand : operands) {
-                if (operand.address().isPresent()) {
-                    return Optional.of(operand);
-                }
-            }
-            return Optional.empty();
-        }
         public Instruction get() {
-            return new Instruction(address, code, mnemonic, operands, Optional.ofNullable(description));
+            return new Instruction(address, code, mnemonic, operands, Optional.ofNullable(description), terminal);
         }
     }
 
     public static class OpBuilder {
         private final String opFmt;
         private String value;
-        private Integer address;
+        private Target target;
 
         private OpBuilder(String opFmt) {
             this.opFmt = opFmt;
@@ -143,16 +160,17 @@ public record Instruction(int address, byte[] code, String mnemonic, List<Operan
             this.value = String.format(fmt, values);
             return this;
         }
-        public OpBuilder address(String fmt, int address) {
+        public OpBuilder address(String fmt, int address, Type type) {
+            Objects.requireNonNull(type);
             this.value = String.format(fmt, address);
-            this.address = address;
+            this.target = new Target(address, type);
             return this;
         }
-        public Optional<Integer> address() {
-            return Optional.ofNullable(address);
+        public Optional<Target> address() {
+            return Optional.ofNullable(target);
         }
         public Operand get() {
-            return new Operand(opFmt, value, Optional.ofNullable(address));
+            return new Operand(opFmt, value, Optional.ofNullable(target));
         }
     }
 }

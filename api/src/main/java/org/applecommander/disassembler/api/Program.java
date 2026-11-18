@@ -16,8 +16,7 @@
  */
 package org.applecommander.disassembler.api;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Program is a state class that tracks where decoding is, what the address is, and provides
@@ -30,12 +29,30 @@ public class Program {
     private final int baseAddress;
     private final byte[] code;
     private int offset;
+    private final List<Object> objects = new ArrayList<>();
 
     public Program(byte[] code, int address) {
         Objects.requireNonNull(code);
         this.baseAddress = address;
         this.code = code;
         this.offset = 0;
+    }
+
+    /** Allows the instruction sets to store a persistent data item for future retrieval. */
+    public <T> void put(T object) {
+        if (get(object.getClass()).isPresent()) {
+            throw new UnsupportedOperationException("can only store one data item per type");
+        }
+        objects.add(object);
+    }
+    /** Retrieve the specified data item. */
+    public <T> Optional<T> get(Class<T> iface) {
+        for (Object object : objects) {
+            if (iface.isInstance(object)) {
+                return Optional.of(iface.cast(object));
+            }
+        }
+        return Optional.empty();
     }
 
     /** Length of code. */
@@ -68,6 +85,10 @@ public class Program {
         offset += n;
         return x;
     }
+    /** Peek ahead at a byte. */
+    public byte peek(int n) {
+        return (offset+n < code.length) ? code[offset+n] : 0;
+    }
     /** Get an unsigned byte from specified offset. This is not relative like the others. */
     public int getUnsignedByte(int n) {
         return n < code.length ? Byte.toUnsignedInt(code[n]) : 0;
@@ -83,5 +104,22 @@ public class Program {
     /** Get the current address. Note that the address is wrapped across the address space. Currently, 64K. */
     public int currentAddress() {
         return (baseAddress+offset) % ADDRESS_SPACE; //wrap around to 0 if address exceeds the address space
+    }
+    /** Set the current address. */
+    public void currentAddress(int address) {
+        if (address < baseAddress) {
+            String msg = String.format("the requested address ($%04X) comes before the program start address ($%04X)",
+                    address, baseAddress);
+            throw new IllegalArgumentException(msg);
+        }
+        this.offset = address - baseAddress;
+    }
+    /** Get the last address in the program. */
+    public int lastAddress() {
+        return baseAddress + code.length - 1;
+    }
+    /** Test if this address is in the range of this program. */
+    public boolean inRange(int address) {
+        return address >= baseAddress() && address <= lastAddress();
     }
 }

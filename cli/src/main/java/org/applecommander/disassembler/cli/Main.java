@@ -91,6 +91,10 @@ public class Main implements Callable<Integer> {
 
     @Option(names = { "--descriptions" }, negatable = true, description = "Include opcode descriptions.")
     private Boolean descriptions;
+
+    @Option(names = "--code", converter = IntegerTypeConverter.class, split = ",",
+            description = "Code entry point. Enables data detection. If this is specified, beginning of file is NOT automatically entered.")
+    private int[] entryPoints;
     
     @Parameters(arity = "1", description = "File to disassemble.")
     private Path file;
@@ -184,13 +188,20 @@ public class Main implements Callable<Integer> {
     }
 
     public void disassemble(byte[] code) {
-        List<Instruction> assembly = Disassembler.with(code)
+        Disassembler.Builder builder = Disassembler.with(code)
                 .startingAddress(startAddress)
                 .bytesToSkip(offset)
                 .bytesToDecode(length)
                 .use(cpuSelection.get())
-                .section(libraries)
-                .decode(labels);
+                .section(libraries);
+
+        if (entryPoints != null) {
+            for (int entryPoint : entryPoints) {
+                builder.entryPoint(entryPoint);
+            }
+        }
+
+        List<Instruction> assembly = builder.decode(labels);
 
         assembly.forEach(emitter);
     }
@@ -267,6 +278,9 @@ public class Main implements Callable<Integer> {
 
     public void emitWithLabels(Instruction instruction) {
         int bytesPerLine = cpuSelection.instructionSet.defaults().bytesPerInstruction();
+        if (entryPoints != null) {
+            bytesPerLine = 8;
+        }
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
@@ -280,8 +294,8 @@ public class Main implements Callable<Integer> {
         System.out.printf(" %-10.10s ", labels.getOrDefault(instruction.address(), ""));
         System.out.printf("%-5s ", instruction.mnemonic());
         System.out.printf("%-30s ", instruction.operands().stream().map(operand -> {
-                if (operand.address().isPresent() && labels.containsKey(operand.address().get())) {
-                    return operand.format(labels.get(operand.address().get()));
+                if (operand.target().isPresent() && labels.containsKey(operand.target().get().address())) {
+                    return operand.format(labels.get(operand.target().get().address()));
                 }
                 else {
                     return operand.format();
@@ -308,6 +322,9 @@ public class Main implements Callable<Integer> {
     }
     public void emitRaw(Instruction instruction) {
         int bytesPerLine = cpuSelection.instructionSet.defaults().bytesPerInstruction();
+        if (entryPoints != null) {
+            bytesPerLine = 8;
+        }
         System.out.printf("%04X- ", instruction.address());
         
         byte[] code = instruction.code();
@@ -389,8 +406,8 @@ public class Main implements Callable<Integer> {
                 }
 
                 @Override
-                public List<Instruction> decode(Program program) {
-                    return List.of();
+                public Instruction decodeOne(Program program) {
+                    return null;
                 }
 
                 @Override

@@ -17,10 +17,10 @@
 package org.applecommander.disassembler.api.sweet16;
 
 import org.applecommander.disassembler.api.Instruction;
+import org.applecommander.disassembler.api.Instruction.Type;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class InstructionSetSWEET16 implements InstructionSet {
@@ -41,18 +41,10 @@ public class InstructionSetSWEET16 implements InstructionSet {
                 .get();
     }
 
-    @Override
-    public List<Instruction> decode(Program program) {
-        List<Instruction> assembly = new ArrayList<>();
-        while (program.hasMore()) {
-            assembly.add(decodeOne(program));
-        }
-        return assembly;
-    }
-
     /**
      * Single instruction decoding has been extracted to support the 6502/SWEET16 switching mode.
      */
+    @Override
     public Instruction decodeOne(Program program) {
         int op = program.peekUnsignedByte();
         int low = op & 0x0f;
@@ -89,11 +81,15 @@ public class InstructionSetSWEET16 implements InstructionSet {
         Instruction.Builder builder = Instruction.at(currentAddress)
                 .code(program.read(addressMode.getInstructionLength()))
                 .mnemonic(opcode.getMnemonic());
+        switch (opcode) {
+            case RTN, BR, RS -> builder.terminal();
+            default -> {}
+        }
         switch (addressMode) {
             case CON -> builder.opValue("R%d", low).opValue("#$%04X", value);
             case DIR -> builder.opValue("R%d", low);
             case IND -> builder.opValue("@R%d", low);
-            case BRA -> builder.opAddress("%s", "$%04X", value);
+            case BRA -> builder.opAddress("%s", "$%04X", value, Type.CODE);
             case IMP -> {
             }
         }

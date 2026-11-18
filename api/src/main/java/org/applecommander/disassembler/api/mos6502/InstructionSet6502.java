@@ -17,10 +17,10 @@
 package org.applecommander.disassembler.api.mos6502;
 
 import org.applecommander.disassembler.api.Instruction;
+import org.applecommander.disassembler.api.Instruction.Type;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class InstructionSet6502 implements InstructionSet {
@@ -37,7 +37,7 @@ public class InstructionSet6502 implements InstructionSet {
     private final AddressMode6502[] addressModes;
     private final Opcode6502[] opcodes;
     private final String name;
-    
+
     private InstructionSet6502(String name, AddressMode6502[] addressModes, Opcode6502[] opcodes) {
         this.name = name;
         this.addressModes = addressModes;
@@ -53,18 +53,10 @@ public class InstructionSet6502 implements InstructionSet {
                 .get();
     }
 
-    @Override
-    public List<Instruction> decode(Program program) {
-        List<Instruction> assembly = new ArrayList<>();
-        while (program.hasMore()) {
-            assembly.add(decodeOne(program));
-        }
-        return assembly;
-    }
-
     /**
      * Single instruction decoding has been extracted to support the 6502/SWEET16 switching mode.
      */
+    @Override
     public Instruction decodeOne(Program program) {
         int op = program.peekUnsignedByte();
 
@@ -85,26 +77,38 @@ public class InstructionSet6502 implements InstructionSet {
             default -> 0;
         };
 
+        // Partial determination of target type for ABS and REL branches.
+        // Other types of branching like "JMP ($1234,X)" are DATA since $1234 is not the actual address.
+        Type type = switch (opcode) {
+            case BCC, BCS, BEQ, BMI, BNE, BPL, BRA, BVC, BVS, JSR, JMP -> Type.CODE;
+            default -> Type.DATA;
+        };
+
         Instruction.Builder builder = Instruction.at(currentAddress)
                 .code(program.read(addressMode.getInstructionLength()))
                 .mnemonic(opcode.getMnemonic());
+        // Flag terminal instructions.
+        switch (opcode) {
+            case BRA, JMP, RTS, RTI -> builder.terminal();
+            default -> {}
+        }
         // Notes: ZZZ{1,2,3} are length of the invalid opcode. Picked most simple representation; not meant to be
         //        technically correct.
         switch (addressMode) {
             case ACC, IMP, ZZZ1 -> {
             }
-            case ABS, REL, ZZZ3 -> builder.opAddress("%s", "$%04X", value);
-            case ABSX -> builder.opAddress("%s", "$%04X", value).opValue("X");
-            case ABSY -> builder.opAddress("%s", "$%04X", value).opValue("Y");
+            case ABS, REL, ZZZ3 -> builder.opAddress("%s", "$%04X", value, type);
+            case ABSX -> builder.opAddress("%s", "$%04X", value, Type.DATA).opValue("X");
+            case ABSY -> builder.opAddress("%s", "$%04X", value, Type.DATA).opValue("Y");
             case IMM -> builder.opValue("#$%02X", value);
-            case INDABS -> builder.opAddress("(%s)", "$%04X", value);
-            case INDABSX -> builder.opAddress("(%s", "$%04X", value).opValue("X)");
-            case INDZP -> builder.opAddress("(%s)", "$%02X", value);
-            case INDZPX -> builder.opAddress("(%s", "$%02X", value).opValue("X)");
-            case INDZPY -> builder.opAddress("(%s)", "$%02X", value).opValue("Y");
-            case ZP, ZZZ2 -> builder.opAddress("%s", "$%02X", value);
-            case ZPX -> builder.opAddress("%s", "$%02X", value).opValue("X");
-            case ZPY -> builder.opAddress("%s", "$%02X", value).opValue("Y");
+            case INDABS -> builder.opAddress("(%s)", "$%04X", value, Type.DATA);
+            case INDABSX -> builder.opAddress("(%s", "$%04X", value, Type.DATA).opValue("X)");
+            case INDZP -> builder.opAddress("(%s)", "$%02X", value, Type.DATA);
+            case INDZPX -> builder.opAddress("(%s", "$%02X", value, Type.DATA).opValue("X)");
+            case INDZPY -> builder.opAddress("(%s)", "$%02X", value, Type.DATA).opValue("Y");
+            case ZP, ZZZ2 -> builder.opAddress("%s", "$%02X", value, Type.DATA);
+            case ZPX -> builder.opAddress("%s", "$%02X", value, Type.DATA).opValue("X");
+            case ZPY -> builder.opAddress("%s", "$%02X", value, Type.DATA).opValue("Y");
         }
         return builder.get();
     }

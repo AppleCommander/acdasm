@@ -26,7 +26,7 @@ public interface InstructionSet {
     /** Provides default values that are useful when setting up the Disassembler. */
     Defaults defaults();
     /** Decodes a program into a set of instructions. */
-    List<Instruction> decode(Program program);
+    Instruction decodeOne(Program program);
     /**
      * Generates an "opcode table" that can be used to generate documentation.
      * Each table is 256 bytes; most have 1 but Z80 has 3.

@@ -17,12 +17,13 @@
 package org.applecommander.disassembler.api.switching6502;
 
 import org.applecommander.disassembler.api.Instruction;
+import org.applecommander.disassembler.api.Instruction.Operand;
+import org.applecommander.disassembler.api.Instruction.Target;
 import org.applecommander.disassembler.api.InstructionSet;
 import org.applecommander.disassembler.api.Program;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 import org.applecommander.disassembler.api.sweet16.InstructionSetSWEET16;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -53,15 +54,11 @@ public class InstructionSet6502Switching implements InstructionSet {
     }
 
     @Override
-    public List<Instruction> decode(Program program) {
-        List<Instruction> assembly = new ArrayList<>();
-        while (program.hasMore()) {
-            if (!pending.isEmpty()) {
-                assembly.add(pending.remove());
-            }
-            assembly.add(strategy.apply(program));
+    public Instruction decodeOne(Program program) {
+        if (!pending.isEmpty()) {
+            return pending.remove();
         }
-        return assembly;
+        return strategy.apply(program);
     }
 
     @Override
@@ -71,7 +68,10 @@ public class InstructionSet6502Switching implements InstructionSet {
 
     Instruction decode6502(Program program) {
         Instruction instruction = mos6502.decodeOne(program);
-        int operandAddress = instruction.addressRef().flatMap(Instruction.Operand::address).orElse(0);
+        int operandAddress = instruction.addressRef()
+                .flatMap(Operand::target)
+                .map(Target::address)
+                .orElse(0);
         if ("JSR".equals(instruction.mnemonic()) && operandAddress == 0xf689) {
             strategy = this::decodeSWEET16;
             pending.add(Instruction.at(program.currentAddress()).mnemonic(".SWEET16").get());
