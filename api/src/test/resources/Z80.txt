@@ -824,6 +824,7 @@ FD CB 44 BE     RES 7,(IY+44H)
 C3 34 12        JP 1234H
 #> JR e
 18 44           JR 0146H
+18 F8           JR 00FAH
 #> JP (HL)
 E9              JP (HL)
 #> JP cc,nn

@@ -39,6 +39,7 @@ public class InstructionSetZ80 implements InstructionSet {
         return Defaults.builder()
                 .startAddress(0x100)        // This it the start address for COM files
                 .bytesPerInstruction(5)
+                .libraryLabels("CPM")
                 .get();
     }
 
@@ -92,7 +93,7 @@ public class InstructionSetZ80 implements InstructionSet {
             length += 1;
         }
         if (op.flags.contains(OFFSET)) {
-            operandValue = addr + program.peekUnsignedByte(length) + 2;
+            operandValue = addr + program.peekSignedByte(length) + 2;
             length += 1;
         }
         // Identify address target type.
@@ -125,7 +126,7 @@ public class InstructionSetZ80 implements InstructionSet {
             }
             // Set up the operand
             if (operandFmt.contains("data") && op.flags.contains(DATLO)) {
-                builder.opValue(operandFmt.replace("data", "%04XH"), operandValue);
+                builder.opAddress(operandFmt.replace("data", "%s"), "%04XH", operandValue, type);
             } else if (operandFmt.contains("add")) {
                 builder.opAddress(operandFmt.replace("add", "%s"), "%04XH", operandValue, type);
             } else if (operandFmt.contains("port")) {
