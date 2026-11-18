@@ -136,12 +136,12 @@ public class Disassembler {
             final int highBit = Byte.toUnsignedInt(program.peek(n)) & 0x80;
             StringBuilder sb = new StringBuilder();
             while (ch >= 0x20 && ch < 0x7f && n < bytes) {
+                int priorHighBit = Byte.toUnsignedInt(program.peek(n)) & 0x80;
                 sb.append((char)ch);
                 n++;
-                if (n == bytes) break;
+                // Exit if we get to end of range -or- if the high bit switched
+                if (n == bytes || priorHighBit != highBit) break;
                 ch = Byte.toUnsignedInt(program.peek(n)) & 0x7f;
-                // Keep high bit setting the same - but we include one assuming it's the end
-                if ((Byte.toUnsignedInt(program.peek(n)) & 0x80) != highBit) break;
             }
             return Instruction.at(currentAddress)
                     .code(program.read(n))
