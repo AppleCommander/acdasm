@@ -62,7 +62,7 @@ public class InstructionSetZ80 implements InstructionSet {
             length++;
         }
         // Setup for IX+override and IY+override (manual, uncertain of nice way)
-        if ((ix | iy) && (b == 0x36 || b == 0xcb)) {
+        if ((ix || iy) && (b == 0x36 || b == 0xcb)) {
             // (DD|FD) (36|CB) <displacement> <opcode>
             hasDisplacement = true;
             length++;
