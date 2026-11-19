@@ -55,7 +55,9 @@ public class Disassembler {
         try (InputStream is = Disassembler.class.getResourceAsStream("/addresses.toml")) {
             TypeReference<Map<String,Map<String,Integer>>> typeRef = new TypeReference<>() {};
             ADDRESSES.putAll(mapper.readValue(is, typeRef));
-            assert !ADDRESSES.isEmpty();
+            if (ADDRESSES.isEmpty()) {
+                throw new IOException("no addresses loaded");
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
