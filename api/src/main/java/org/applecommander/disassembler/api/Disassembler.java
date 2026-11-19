@@ -16,10 +16,16 @@
  */
 package org.applecommander.disassembler.api;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.KeyDeserializer;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import org.applecommander.disassembler.api.mos6502.InstructionSet6502;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -65,11 +71,12 @@ public class Disassembler {
     private final List<Integer> entryPoints;
     private final BitSet dataFlags;
     private final List<Integer> labelAddresses;
+    private final Map<String, FunctionMapping> mappings;
     private int startAddress;
     private byte[] code;
 
     public Disassembler(int startAddress, int bytesToSkip, int bytesToDecode, byte[] code,
-                 InstructionSet instructionSet, List<Integer> entryPoints) {
+                 InstructionSet instructionSet, List<Integer> entryPoints, Map<String, FunctionMapping> mappings) {
         this.startAddress = startAddress;
         this.bytesToSkip = bytesToSkip;
         this.bytesToDecode = bytesToDecode;
@@ -78,6 +85,7 @@ public class Disassembler {
         this.entryPoints = Collections.unmodifiableList(entryPoints);
         this.dataFlags = new BitSet(code.length);
         this.labelAddresses = new ArrayList<>();
+        this.mappings = Collections.unmodifiableMap(mappings);
     }
 
     /** Initiate the disassembly. */
@@ -107,7 +115,33 @@ public class Disassembler {
             if (dataFlags.get(program.currentOffset())) {
                 assembly.add(parseData(program));
             } else {
-                assembly.add(instructionSet.decodeOne(program));
+                Instruction instruction = instructionSet.decodeOne(program);
+                assembly.add(instruction);
+                String key = HexFormat.of().formatHex(instruction.code());
+                if (mappings.containsKey(key)) {
+                    FunctionMapping mapping = mappings.get(key);
+                    for (Parameter param : mapping.parameters) {
+                        int currentAddress = program.currentAddress();
+                        byte[] data = program.read(param.size());
+                        Instruction.Builder builder = Instruction.at(currentAddress)
+                                .code(data);
+                        if (param.type() == ParamType.LOOKUP) {
+                            int value = Byte.toUnsignedInt(data[0]);
+                            assembly.add(builder
+                                    .opValue("$%02X", value)
+                                    .mnemonic(".hex")
+                                    .description(param.values().getOrDefault(value, "Unknown"))
+                                    .get());
+                        }
+                        else if (param.type() == ParamType.ADDRESS) {
+                            int address = Byte.toUnsignedInt(data[1]) << 8 | Byte.toUnsignedInt(data[0]);
+                            assembly.add(builder
+                                    .opAddress("%s", "$%04X", address, Instruction.Type.DATA)
+                                    .mnemonic(".address")
+                                    .get());
+                        }
+                    }
+                }
             }
         }
 
@@ -188,7 +222,15 @@ public class Disassembler {
                 int offset = program.currentOffset();
                 completedAddresses.add(program.currentAddress());
                 Instruction inst = instructionSet.decodeOne(program);
-                dataFlags.clear(offset, offset+inst.code().length);
+                int instructionLength = offset+inst.code().length;
+                String key = HexFormat.of().formatHex(inst.code());
+                if (mappings.containsKey(key)) {
+                    FunctionMapping mapping = mappings.get(key);
+                    for (Parameter param : mapping.parameters) {
+                        instructionLength += param.size;
+                    }
+                }
+                dataFlags.clear(offset, instructionLength);
                 Optional<Instruction.Operand> addressRef = inst.addressRef();
                 // Handle (simple) code branches; nothing indirect
                 if (addressRef.isPresent()) {
@@ -212,7 +254,11 @@ public class Disassembler {
         }
         labelAddresses.sort(Integer::compare);
     }
-    
+
+    public record FunctionMapping(byte[] code, List<Parameter> parameters) {};
+    public record Parameter(String name, int size, ParamType type, Map<Integer,String> values) {}
+    public enum ParamType { LOOKUP, ADDRESS }
+
     public static class Builder {
         private final Set<String> sections = new HashSet<>();
         private final byte[] code;
@@ -221,6 +267,7 @@ public class Disassembler {
         private int bytesToDecode;
         private InstructionSet instructionSet;
         private List<Integer> entryPoints = new ArrayList<>();
+        private Map<String, FunctionMapping> mappings = new HashMap<>();
 
         public Builder(byte[] code) {
             this.startAddress = 0x300;
@@ -247,7 +294,7 @@ public class Disassembler {
             }
 
             Disassembler disassembler = new Disassembler(startAddress, bytesToSkip, bytesToDecode, code,
-                    instructionSet, entryPoints);
+                    instructionSet, entryPoints, mappings);
             return disassembler.decode(labels);
         }
         /** The starting address for the disassembly. */
@@ -274,6 +321,43 @@ public class Disassembler {
         public Builder entryPoint(int address) {
             this.entryPoints.add(address);
             return this;
+        }
+        /** Add a custom mapping from a file. */
+        public Builder customMapping(String fileName) {
+            try {
+                return customMapping(new FileInputStream(fileName));
+            } catch (IOException ex) {
+                throw new UncheckedIOException(ex);
+            }
+        }
+        /** Add a custom mapping from an InputStream. */
+        public Builder customMapping(InputStream inputStream) {
+            TomlMapper mapper = new TomlMapper();
+            SimpleModule simpleModule = new SimpleModule();
+            simpleModule.addDeserializer(ParamType.class, new StdDeserializer<>(ParamType.class) {
+                @Override
+                public ParamType deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                    return ParamType.valueOf(p.getText().toUpperCase());
+                }
+            });
+            simpleModule.addKeyDeserializer(Integer.class, new KeyDeserializer() {
+                @Override
+                public Object deserializeKey(String key, DeserializationContext context) {
+                    if (key.startsWith("0x") || key.startsWith("0X")) {
+                        return Integer.parseUnsignedInt(key.substring(2), 16);
+                    }
+                    return Integer.valueOf(key);
+                }
+            });
+            mapper.registerModule(simpleModule);
+            try (inputStream) {
+                FunctionMapping mapping = mapper.readValue(inputStream, FunctionMapping.class);
+                String key = HexFormat.of().formatHex(mapping.code());
+                this.mappings.put(key, mapping);
+                return this;
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
         /** Add any label groups requested. Allows "All" and "None". */
         public Builder section(List<String> names) {

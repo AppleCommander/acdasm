@@ -95,6 +95,9 @@ public class Main implements Callable<Integer> {
     @Option(names = "--code", converter = IntegerTypeConverter.class, split = ",",
             description = "Code entry point. Enables data detection. If this is specified, beginning of file is NOT automatically entered.")
     private int[] entryPoints;
+
+    @Option(names = "--mli", description = "Enable decoding of ProDOS MLI calls.")
+    private boolean enableMLI;
     
     @Parameters(arity = "1", description = "File to disassemble.")
     private Path file;
@@ -199,6 +202,10 @@ public class Main implements Callable<Integer> {
             for (int entryPoint : entryPoints) {
                 builder.entryPoint(entryPoint);
             }
+        }
+        if (enableMLI) {
+            builder.customMapping(Disassembler.class.getResourceAsStream("/prodos-mli.toml"));
+            descriptions = true;
         }
 
         List<Instruction> assembly = builder.decode(labels);
