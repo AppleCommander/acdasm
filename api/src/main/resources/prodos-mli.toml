@@ -1,0 +1,41 @@
+# 20 00 BF   JSR MLI
+# XX         DFB function
+# XX XX      DA parameters
+
+code = [0x20, 0x00, 0xbf]
+
+[[parameters]]
+name = "function"
+size = 1
+type = "lookup"
+values."0x40" = "ALLOC_INTERRUPT"
+values."0x41" = "DEALLOC_INTERRUPT"
+values."0x65" = "QUIT"
+values."0x80" = "READ_BLOCK"
+values."0x81" = "WRITE_BLOCK"
+values."0x82" = "GET_TIME"
+values."0xc0" = "CREATE"
+values."0xc1" = "DESTROY"
+values."0xc2" = "RENAME"
+values."0xc3" = "SET_FILE_INFO"
+values."0xc4" = "GET_FILE_INFO"
+values."0xc5" = "ONLINE"
+values."0xc6" = "SET_PREFIX"
+values."0xc7" = "GET_PREFIX"
+values."0xc8" = "OPEN"
+values."0xc9" = "NEWLINE"
+values."0xca" = "READ"
+values."0xcb" = "WRITE"
+values."0xcc" = "CLOSE"
+values."0xcd" = "FLUSH"
+values."0xce" = "SET_MARK"
+values."0xcf" = "GET_MARK"
+values."0xd0" = "SET_EOF"
+values."0xd1" = "GET_EOF"
+values."0xd2" = "SET_BUF"
+values."0xd3" = "GET_BUF"
+
+[[parameters]]
+name = "parameters"
+size = 2
+type = "address"

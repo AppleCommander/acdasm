@@ -13,7 +13,7 @@ The disassembler can be used in any Java application via the [API](https://apple
 
 ```
 $ acdasm --help
-Usage: acdasm [-hV] [--debug] [--[no-]descriptions] [--[no-]labels]
+Usage: acdasm [-hV] [--debug] [--[no-]descriptions] [--[no-]labels] [--mli]
               [-a=<startAddress>] [-n=<length>] [--offset=<offset>]
               [--code=<entryPoints>[,<entryPoints>...]]... [-l=<library>[,
               <library>...]]... [--6502 | --sweet16 | --6502s | --6502x |
@@ -38,6 +38,7 @@ Options:
                                a default set. Use 'All' to select all. 'None'
                                may also be used to turn library labels off.
       --[no-]labels          Show or hide labels.
+      --mli                  Enable decoding of ProDOS MLI calls.
   -n, --length=<length>      Disassembly length bytes.
       --offset=<offset>      Skip offset bytes into binary before disassembling.
   -V, --version              Print version information and exit.
@@ -183,4 +184,23 @@ $ acdasm --pcode HELLOWORLD.CODE.bin --offset 0x200 --length 0x24
 021D- CD 00 16                            CXP   0,22                           ; Call external procedure
 0220- 9E 00                               IOC                                  ; IO Check (checks IORESULT)
 0222- C1 00                               RBP   0                              ; Return from base procedure
+```
+
+Disassembling with MLI function identification:
+
+```
+$ acdasm --65c02 -a 0x2000 --code 0x2000,0x20d4 BASIC.SYSTEM.data --mli
+<snip>
+2141- AD 3E 22                            LDA   L223E                          
+2144- C9 03                               CMP   #$03                           
+2146- B0 27                               BCS   L216F                          
+2148- 20 00 BF                            JSR   MLI                            
+214B- C6                                  .hex  $C6                            ; SET_PREFIX
+214C- 31 22                               .address L2231                          
+214E- 20 00 BF                 L214E      JSR   MLI                            
+2151- C5                                  .hex  $C5                            ; ONLINE
+2152- 37 22                               .address L2237                          
+2154- D0 35                               BNE   L218B                          
+2156- AD 81 02                            LDA   $0281
+<snip>
 ```
