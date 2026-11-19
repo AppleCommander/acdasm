@@ -74,8 +74,8 @@ public class Disassembler {
     private final BitSet dataFlags;
     private final List<Integer> labelAddresses;
     private final Map<String, FunctionMapping> mappings;
-    private int startAddress;
-    private byte[] code;
+    private final int startAddress;
+    private final byte[] code;
 
     public Disassembler(int startAddress, int bytesToSkip, int bytesToDecode, byte[] code,
                  InstructionSet instructionSet, List<Integer> entryPoints, Map<String, FunctionMapping> mappings) {
@@ -97,16 +97,17 @@ public class Disassembler {
     
     private List<Instruction> decode(Map<Integer,String> labels) {
         // Create a subset of the original code and adjust starting address accordingly
+        byte[] codeToDisassemble = code;
+        int actualStartAddress = startAddress;
         if (bytesToSkip > 0 || bytesToDecode > 0) {
-            byte[] dest = new byte[bytesToDecode == 0 ? code.length - bytesToSkip : bytesToDecode];
-            System.arraycopy(code, bytesToSkip, dest, 0, dest.length);
-            code = dest;
-            startAddress+= bytesToSkip;
+            codeToDisassemble = new byte[bytesToDecode == 0 ? code.length - bytesToSkip : bytesToDecode];
+            System.arraycopy(code, bytesToSkip, codeToDisassemble, 0, codeToDisassemble.length);
+            actualStartAddress+= bytesToSkip;
         }
 
         // Assume all is code
-        dataFlags.clear(0, code.length);
-        Program program = new Program(code,startAddress);
+        Program program = new Program(codeToDisassemble,actualStartAddress);
+        dataFlags.clear(0, program.length());
         if (!entryPoints.isEmpty()) {
             // If we have entry points, we need to scan the program and identify data versus code.
             prescan(program);
@@ -202,7 +203,7 @@ public class Disassembler {
 
     public void prescan(Program program) {
         // Assume all is data and we'll figure out the code.
-        dataFlags.set(0, code.length);
+        dataFlags.set(0, program.length());
         labelAddresses.clear();
 
         Set<Integer> completedAddresses = new HashSet<>();
