@@ -8,8 +8,8 @@ ext.isSnapshotVersion = version.endsWith("SNAPSHOT")
 ext.isReleaseVersion = !ext.isSnapshotVersion
 
 java {
-    sourceCompatibility = 21
-    targetCompatibility = 21
+    sourceCompatibility = 25
+    targetCompatibility = 25
 }
 
 repositories {
@@ -38,6 +38,7 @@ jar {
         attributes 'Implementation-Title': "AppleCommander 'acdis'",
                    'Implementation-Version': acdasmVersion
     }
+    from('../LICENSE')
 }
 
 javadoc {

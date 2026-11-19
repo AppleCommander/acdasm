@@ -1,18 +1,17 @@
 /*
- * Copyright (C) 2025  rob at applecommander.org
+ * Copyright 2026  Robert Greene
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.applecommander.disassembler.api;
 
@@ -30,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Disassembler is the primary interface to disassemble a program.
@@ -55,14 +55,16 @@ public class Disassembler {
         try (InputStream is = Disassembler.class.getResourceAsStream("/addresses.toml")) {
             TypeReference<Map<String,Map<String,Integer>>> typeRef = new TypeReference<>() {};
             ADDRESSES.putAll(mapper.readValue(is, typeRef));
-            assert !ADDRESSES.isEmpty();
+            if (ADDRESSES.isEmpty()) {
+                throw new IOException("no addresses loaded");
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
     /** Returns the label groups defined in the {@code addresses.yaml} file. */
     public static Set<String> labelGroups() {
-        return ADDRESSES.keySet();
+        return ADDRESSES.keySet().stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private final int bytesToSkip;
@@ -72,8 +74,8 @@ public class Disassembler {
     private final BitSet dataFlags;
     private final List<Integer> labelAddresses;
     private final Map<String, FunctionMapping> mappings;
-    private int startAddress;
-    private byte[] code;
+    private final int startAddress;
+    private final byte[] code;
 
     public Disassembler(int startAddress, int bytesToSkip, int bytesToDecode, byte[] code,
                  InstructionSet instructionSet, List<Integer> entryPoints, Map<String, FunctionMapping> mappings) {
@@ -95,16 +97,17 @@ public class Disassembler {
     
     private List<Instruction> decode(Map<Integer,String> labels) {
         // Create a subset of the original code and adjust starting address accordingly
+        byte[] codeToDisassemble = code;
+        int actualStartAddress = startAddress;
         if (bytesToSkip > 0 || bytesToDecode > 0) {
-            byte[] dest = new byte[bytesToDecode == 0 ? code.length - bytesToSkip : bytesToDecode];
-            System.arraycopy(code, bytesToSkip, dest, 0, dest.length);
-            code = dest;
-            startAddress+= bytesToSkip;
+            codeToDisassemble = new byte[bytesToDecode == 0 ? code.length - bytesToSkip : bytesToDecode];
+            System.arraycopy(code, bytesToSkip, codeToDisassemble, 0, codeToDisassemble.length);
+            actualStartAddress+= bytesToSkip;
         }
 
         // Assume all is code
-        dataFlags.clear(0, code.length);
-        Program program = new Program(code,startAddress);
+        Program program = new Program(codeToDisassemble,actualStartAddress);
+        dataFlags.clear(0, program.length());
         if (!entryPoints.isEmpty()) {
             // If we have entry points, we need to scan the program and identify data versus code.
             prescan(program);
@@ -120,12 +123,12 @@ public class Disassembler {
                 String key = HexFormat.of().formatHex(instruction.code());
                 if (mappings.containsKey(key)) {
                     FunctionMapping mapping = mappings.get(key);
-                    for (Parameter param : mapping.parameters) {
+                    for (FunctionMapping.Parameter param : mapping.parameters()) {
                         int currentAddress = program.currentAddress();
                         byte[] data = program.read(param.size());
                         Instruction.Builder builder = Instruction.at(currentAddress)
                                 .code(data);
-                        if (param.type() == ParamType.LOOKUP) {
+                        if (param.type() == FunctionMapping.ParamType.LOOKUP) {
                             int value = Byte.toUnsignedInt(data[0]);
                             assembly.add(builder
                                     .opValue("$%02X", value)
@@ -133,7 +136,7 @@ public class Disassembler {
                                     .description(param.values().getOrDefault(value, "Unknown"))
                                     .get());
                         }
-                        else if (param.type() == ParamType.ADDRESS) {
+                        else if (param.type() == FunctionMapping.ParamType.ADDRESS) {
                             int address = Byte.toUnsignedInt(data[1]) << 8 | Byte.toUnsignedInt(data[0]);
                             assembly.add(builder
                                     .opAddress("%s", "$%04X", address, Instruction.Type.DATA)
@@ -183,6 +186,7 @@ public class Disassembler {
                     .opValue("'%s'", sb.toString())
                     .get();
         } else {
+            bytes = Math.min(bytes, 16);    // Cap at 16 bytes per '.hex' line.
             while ((n < bytes && ch < 0x20) || ch == 0x7f) {
                 n++;
                 if (n == bytes) break;
@@ -199,7 +203,7 @@ public class Disassembler {
 
     public void prescan(Program program) {
         // Assume all is data and we'll figure out the code.
-        dataFlags.set(0, code.length);
+        dataFlags.set(0, program.length());
         labelAddresses.clear();
 
         Set<Integer> completedAddresses = new HashSet<>();
@@ -226,8 +230,8 @@ public class Disassembler {
                 String key = HexFormat.of().formatHex(inst.code());
                 if (mappings.containsKey(key)) {
                     FunctionMapping mapping = mappings.get(key);
-                    for (Parameter param : mapping.parameters) {
-                        instructionLength += param.size;
+                    for (FunctionMapping.Parameter param : mapping.parameters()) {
+                        instructionLength += param.size();
                     }
                 }
                 dataFlags.clear(offset, instructionLength);
@@ -255,10 +259,6 @@ public class Disassembler {
         labelAddresses.sort(Integer::compare);
     }
 
-    public record FunctionMapping(byte[] code, List<Parameter> parameters) {};
-    public record Parameter(String name, int size, ParamType type, Map<Integer,String> values) {}
-    public enum ParamType { LOOKUP, ADDRESS }
-
     public static class Builder {
         private final Set<String> sections = new HashSet<>();
         private final byte[] code;
@@ -266,8 +266,8 @@ public class Disassembler {
         private int bytesToSkip;
         private int bytesToDecode;
         private InstructionSet instructionSet;
-        private List<Integer> entryPoints = new ArrayList<>();
-        private Map<String, FunctionMapping> mappings = new HashMap<>();
+        private final List<Integer> entryPoints = new ArrayList<>();
+        private final Map<String, FunctionMapping> mappings = new HashMap<>();
 
         public Builder(byte[] code) {
             this.startAddress = 0x300;
@@ -334,10 +334,10 @@ public class Disassembler {
         public Builder customMapping(InputStream inputStream) {
             TomlMapper mapper = new TomlMapper();
             SimpleModule simpleModule = new SimpleModule();
-            simpleModule.addDeserializer(ParamType.class, new StdDeserializer<>(ParamType.class) {
+            simpleModule.addDeserializer(FunctionMapping.ParamType.class, new StdDeserializer<>(FunctionMapping.ParamType.class) {
                 @Override
-                public ParamType deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-                    return ParamType.valueOf(p.getText().toUpperCase());
+                public FunctionMapping.ParamType deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                    return FunctionMapping.ParamType.valueOf(p.getText().toUpperCase());
                 }
             });
             simpleModule.addKeyDeserializer(Integer.class, new KeyDeserializer() {

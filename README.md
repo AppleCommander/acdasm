@@ -12,7 +12,6 @@ The disassembler can be used in any Java application via the [API](https://apple
 ## CLI
 
 ```
-$ acdasm --help
 Usage: acdasm [-hV] [--debug] [--[no-]descriptions] [--[no-]labels] [--mli]
               [-a=<startAddress>] [-n=<length>] [--offset=<offset>]
               [--code=<entryPoints>[,<entryPoints>...]]... [-l=<library>[,
@@ -54,15 +53,18 @@ CPU Selection:
       --z80, --Z80           Zilog Z80.
 
 Processor Defaults:
-  Default Value          6502   6502X  6502S  65C02  SWEET-16  Z80    P-CODE
-  ---------------------  -----  -----  -----  -----  --------  -----  ------
-  Start Address          $0300  $0300  $0300  $0300  $0300     0100H  $0000
-  Library Labels         All    All    All    All    All       CPM    None
-  Max Bytes/Instruction  3      3      3      3      3         5      8
-  Show Descriptions?     No     No     No     No     No        No     Yes
+  Default Value           6502   6502X  6502S  65C02  SWEET-16  Z80    P-CODE
+  ----------------------  -----  -----  -----  -----  --------  -----  ------
+  Start Address           $0300  $0300  $0300  $0300  $0300     0100H  $0000
+  Library Labels          All    All    All    All    All       CPM    None
+  Max Bytes/Instruction*  3      3      3      3      3         5      8
+  Show Descriptions?      No     No     No     No     No        No     Yes
+
+  * If any code entry points are specified, the width is adjusted to 8 bytes
+    to allow the larger data definitions.
 
 Library Groups:
-  CPM, F800, ProDOS, DISKII, DOS, Applesoft, Softswitches
+  Applesoft, CPM, DISKII, DOS, F800, ProDOS, Softswitches
 ```
 
 Sample runs:
