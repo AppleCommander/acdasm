@@ -120,12 +120,12 @@ public class Disassembler {
                 String key = HexFormat.of().formatHex(instruction.code());
                 if (mappings.containsKey(key)) {
                     FunctionMapping mapping = mappings.get(key);
-                    for (Parameter param : mapping.parameters) {
+                    for (FunctionMapping.Parameter param : mapping.parameters()) {
                         int currentAddress = program.currentAddress();
                         byte[] data = program.read(param.size());
                         Instruction.Builder builder = Instruction.at(currentAddress)
                                 .code(data);
-                        if (param.type() == ParamType.LOOKUP) {
+                        if (param.type() == FunctionMapping.ParamType.LOOKUP) {
                             int value = Byte.toUnsignedInt(data[0]);
                             assembly.add(builder
                                     .opValue("$%02X", value)
@@ -133,7 +133,7 @@ public class Disassembler {
                                     .description(param.values().getOrDefault(value, "Unknown"))
                                     .get());
                         }
-                        else if (param.type() == ParamType.ADDRESS) {
+                        else if (param.type() == FunctionMapping.ParamType.ADDRESS) {
                             int address = Byte.toUnsignedInt(data[1]) << 8 | Byte.toUnsignedInt(data[0]);
                             assembly.add(builder
                                     .opAddress("%s", "$%04X", address, Instruction.Type.DATA)
@@ -227,8 +227,8 @@ public class Disassembler {
                 String key = HexFormat.of().formatHex(inst.code());
                 if (mappings.containsKey(key)) {
                     FunctionMapping mapping = mappings.get(key);
-                    for (Parameter param : mapping.parameters) {
-                        instructionLength += param.size;
+                    for (FunctionMapping.Parameter param : mapping.parameters()) {
+                        instructionLength += param.size();
                     }
                 }
                 dataFlags.clear(offset, instructionLength);
@@ -256,10 +256,6 @@ public class Disassembler {
         labelAddresses.sort(Integer::compare);
     }
 
-    public record FunctionMapping(byte[] code, List<Parameter> parameters) {};
-    public record Parameter(String name, int size, ParamType type, Map<Integer,String> values) {}
-    public enum ParamType { LOOKUP, ADDRESS }
-
     public static class Builder {
         private final Set<String> sections = new HashSet<>();
         private final byte[] code;
@@ -267,8 +263,8 @@ public class Disassembler {
         private int bytesToSkip;
         private int bytesToDecode;
         private InstructionSet instructionSet;
-        private List<Integer> entryPoints = new ArrayList<>();
-        private Map<String, FunctionMapping> mappings = new HashMap<>();
+        private final List<Integer> entryPoints = new ArrayList<>();
+        private final Map<String, FunctionMapping> mappings = new HashMap<>();
 
         public Builder(byte[] code) {
             this.startAddress = 0x300;
@@ -335,10 +331,10 @@ public class Disassembler {
         public Builder customMapping(InputStream inputStream) {
             TomlMapper mapper = new TomlMapper();
             SimpleModule simpleModule = new SimpleModule();
-            simpleModule.addDeserializer(ParamType.class, new StdDeserializer<>(ParamType.class) {
+            simpleModule.addDeserializer(FunctionMapping.ParamType.class, new StdDeserializer<>(FunctionMapping.ParamType.class) {
                 @Override
-                public ParamType deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-                    return ParamType.valueOf(p.getText().toUpperCase());
+                public FunctionMapping.ParamType deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                    return FunctionMapping.ParamType.valueOf(p.getText().toUpperCase());
                 }
             });
             simpleModule.addKeyDeserializer(Integer.class, new KeyDeserializer() {
