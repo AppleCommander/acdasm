@@ -26,6 +26,7 @@ compileJava {
 
 jar {
     archiveVersion = acdasmVersion
+    from('../LICENSE')
 }
 
 application {

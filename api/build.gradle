@@ -38,6 +38,7 @@ jar {
         attributes 'Implementation-Title': "AppleCommander 'acdis'",
                    'Implementation-Version': acdasmVersion
     }
+    from('../LICENSE')
 }
 
 javadoc {
