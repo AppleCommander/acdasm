@@ -183,6 +183,7 @@ public class Disassembler {
                     .opValue("'%s'", sb.toString())
                     .get();
         } else {
+            bytes = Math.min(bytes, 16);    // Cap at 16 bytes per '.hex' line.
             while ((n < bytes && ch < 0x20) || ch == 0x7f) {
                 n++;
                 if (n == bytes) break;
