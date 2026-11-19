@@ -132,9 +132,11 @@ public class Main implements Callable<Integer> {
                             }
                             return String.join(",", set.defaults().libraryLabels());
                         })
-                        .row("Max Bytes/Instruction", set -> String.format("%d", set.defaults().bytesPerInstruction()))
+                        .row("Max Bytes/Instruction*", set -> String.format("%d", set.defaults().bytesPerInstruction()))
                         .row("Show Descriptions?", set -> set.defaults().includeDescription() ? "Yes" : "No")
                         .build());
+            pw.println("  * If any code entry points are specified, the width is adjusted to 8 bytes");
+            pw.println("    to allow the larger data definitions.\n");
             pw.println("Library Groups:");
             pw.printf("  %s\n", String.join(", ", Disassembler.labelGroups()));
             return sw.toString();
